@@ -34,12 +34,13 @@ def main():
     
     st.sidebar.markdown("""
     1. **Data Upload** - Upload and configure your dataset
-    2. **Column Analysis** - Detailed analysis of individual columns  
-    3. **Cleaning Wizard** - Apply cleaning methods with integrated weights
-    4. **Visualization** - Create interactive visualizations
-    5. **Hypothesis Analysis** - Perform statistical hypothesis tests
-    6. **AI Assistant** - Get expert advice and explanations
-    7. **Reports** - Generate comprehensive cleaning reports
+    2. **Anomaly Detection** - Detect and fix data type mismatches
+    3. **Column Analysis** - Detailed analysis of individual columns  
+    4. **Cleaning Wizard** - Apply cleaning methods with integrated weights
+    5. **Visualization** - Create interactive visualizations
+    6. **Hypothesis Analysis** - Perform statistical hypothesis tests
+    7. **AI Assistant** - Get expert advice and explanations
+    8. **Reports** - Generate comprehensive cleaning reports
     """)
     
     # Display current dataset info if available
@@ -67,10 +68,11 @@ def main():
         st.markdown("""
         1. **Upload Your Data**: Go to the Data Upload page and select your CSV or Excel file
         2. **Review Column Types**: The system will automatically detect column types - review and adjust as needed
-        3. **Analyze Columns**: Use the Column Analysis page to examine each column individually
-        4. **Clean Your Data**: Apply appropriate cleaning methods using the Cleaning Wizard
-        5. **Get AI Help**: Use the AI Assistant for expert guidance and explanations
-        6. **Generate Reports**: Create comprehensive documentation of your cleaning process
+        3. **Check for Anomalies**: Use Anomaly Detection to find and fix data type mismatches
+        4. **Analyze Columns**: Use the Column Analysis page to examine each column individually
+        5. **Clean Your Data**: Apply appropriate cleaning methods using the Cleaning Wizard
+        6. **Get AI Help**: Use the AI Assistant for expert guidance and explanations
+        7. **Generate Reports**: Create comprehensive documentation of your cleaning process
         """)
 
 if __name__ == "__main__":
