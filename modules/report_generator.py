@@ -609,14 +609,23 @@ All operations listed above can be independently verified and reproduced using t
         # Container for PDF elements
         elements = []
         
-        # Enhanced Styles
+        # Enhanced Styles with Modern Color Palette
         styles = getSampleStyleSheet()
+        
+        # Modern color palette
+        primary_color = colors.HexColor('#2E86AB')  # Blue
+        success_color = colors.HexColor('#06D6A0')  # Green
+        warning_color = colors.HexColor('#F77F00')  # Orange
+        danger_color = colors.HexColor('#EF476F')   # Red
+        dark_text = colors.HexColor('#22223B')      # Dark blue-grey
+        light_bg = colors.HexColor('#F8F9FA')       # Light grey
+        
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
-            fontSize=26,
-            textColor=colors.HexColor('#1a5490'),
-            spaceAfter=20,
+            fontSize=28,
+            textColor=primary_color,
+            spaceAfter=25,
             spaceBefore=10,
             alignment=TA_CENTER,
             fontName='Helvetica-Bold'
@@ -624,28 +633,60 @@ All operations listed above can be independently verified and reproduced using t
         heading_style = ParagraphStyle(
             'CustomHeading',
             parent=styles['Heading2'],
-            fontSize=14,
-            textColor=colors.HexColor('#2c3e50'),
-            spaceAfter=10,
-            spaceBefore=15,
-            fontName='Helvetica-Bold'
+            fontSize=16,
+            textColor=dark_text,
+            spaceAfter=12,
+            spaceBefore=18,
+            fontName='Helvetica-Bold',
+            borderPadding=8,
+            leftIndent=0,
+            backColor=light_bg,
+            borderWidth=0,
+            borderColor=primary_color,
+            borderRadius=2
         )
         subheading_style = ParagraphStyle(
             'SubHeading',
             parent=styles['Heading3'],
-            fontSize=12,
-            textColor=colors.HexColor('#34495e'),
-            spaceAfter=8,
-            spaceBefore=10,
+            fontSize=13,
+            textColor=primary_color,
+            spaceAfter=10,
+            spaceBefore=12,
             fontName='Helvetica-Bold'
         )
         normal_style = styles['Normal']
+        normal_style.fontSize = 10
+        normal_style.textColor = dark_text
+        
         issue_style = ParagraphStyle(
             'IssueStyle',
             parent=styles['Normal'],
-            fontSize=9,
-            textColor=colors.HexColor('#c0392b'),
-            leftIndent=20
+            fontSize=10,
+            textColor=danger_color,
+            leftIndent=20,
+            spaceAfter=4
+        )
+        
+        success_style = ParagraphStyle(
+            'SuccessStyle',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=success_color,
+            leftIndent=20,
+            fontName='Helvetica-Bold'
+        )
+        
+        info_box_style = ParagraphStyle(
+            'InfoBox',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=dark_text,
+            backColor=light_bg,
+            borderPadding=10,
+            borderWidth=1,
+            borderColor=primary_color,
+            borderRadius=3,
+            spaceAfter=10
         )
         
         # Title Page
@@ -670,7 +711,7 @@ All operations listed above can be independently verified and reproduced using t
             "2. All Issues Detected in Dataset",
             "3. Cleaning Operations Applied",
             "4. Imputed Values and Results",
-            "5. Anomaly Detection Results",
+            "5. Data Type Anomaly Detection Results",
             "6. Visualizations",
             "7. Complete Audit Trail"
         ]
@@ -695,16 +736,20 @@ All operations listed above can be independently verified and reproduced using t
         
         summary_table = Table(summary_data, colWidths=[3*inch, 3.5*inch])
         summary_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a5490')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('BACKGROUND', (0, 0), (-1, 0), primary_color),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 11),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('TOPPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#ecf0f1')),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#ecf0f1'), colors.white])
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 14),
+            ('TOPPADDING', (0, 0), (-1, 0), 14),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 10),
+            ('TOPPADDING', (0, 1), (-1, -1), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), light_bg),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#DEE2E6')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [light_bg, colors.white]),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
         ]))
         
         elements.append(summary_table)
@@ -759,8 +804,7 @@ All operations listed above can be independently verified and reproduced using t
                         elements.append(Paragraph(f"• {issue}", issue_style))
                     elements.append(Spacer(1, 0.15*inch))
                 else:
-                    elements.append(Paragraph("✅ No major issues detected", 
-                        ParagraphStyle('GoodStyle', parent=normal_style, textColor=colors.green, leftIndent=20)))
+                    elements.append(Paragraph("✅ No major issues detected", success_style))
                     elements.append(Spacer(1, 0.15*inch))
         else:
             elements.append(Paragraph("No column analysis available.", normal_style))
@@ -842,17 +886,20 @@ All operations listed above can be independently verified and reproduced using t
             if len(imputation_data) > 1:
                 imputation_table = Table(imputation_data, colWidths=[1.3*inch, 1.3*inch, 1.2*inch, 0.9*inch, 1.8*inch])
                 imputation_table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#27ae60')),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('BACKGROUND', (0, 0), (-1, 0), success_color),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                     ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, -1), 8),
-                    ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-                    ('TOPPADDING', (0, 0), (-1, 0), 10),
-                    ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#d5f4e6')),
-                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    ('FONTSIZE', (0, 0), (-1, 0), 10),
+                    ('FONTSIZE', (0, 1), (-1, -1), 9),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('TOPPADDING', (0, 0), (-1, 0), 12),
+                    ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+                    ('TOPPADDING', (0, 1), (-1, -1), 8),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#E8F8F5')),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#DEE2E6')),
                     ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#d5f4e6'), colors.white])
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#E8F8F5'), colors.white])
                 ]))
                 elements.append(imputation_table)
             else:
@@ -862,61 +909,65 @@ All operations listed above can be independently verified and reproduced using t
         
         elements.append(PageBreak())
         
-        # Section 5: Anomaly Detection Results
-        elements.append(Paragraph("5. 🚨 Anomaly Detection Results", heading_style))
+        # Section 5: Data Type Anomaly Detection Results
+        elements.append(Paragraph("5. 🚨 Data Type Anomaly Detection Results", heading_style))
         elements.append(Spacer(1, 0.2*inch))
         
         if anomaly_results and len(anomaly_results) > 0:
+            elements.append(Paragraph(
+                "The following columns had values that did not match their declared data types:",
+                normal_style
+            ))
+            elements.append(Spacer(1, 0.15*inch))
             
             for col_name, anomaly_data in anomaly_results.items():
-                elements.append(Paragraph(f"<b>Column: {col_name}</b>", subheading_style))
-                
-                # Anomaly summary table
-                anomaly_table_data = [['Anomaly Type', 'Count', 'Details']]
-                
-                # Outliers
-                if anomaly_data.get('total_outliers', 0) > 0:
-                    outliers = anomaly_data['total_outliers']
-                    severity = anomaly_data.get('severity', 'N/A')
-                    anomaly_table_data.append(['Outliers', str(outliers), f"Severity: {severity}"])
-                
-                # Missing data
-                if anomaly_data.get('missing_data'):
-                    missing = anomaly_data['missing_data']
-                    anomaly_table_data.append([
-                        'Missing Values',
-                        str(missing['count']),
-                        f"{missing['percentage']:.2f}% - Pattern: {missing['pattern']}"
-                    ])
-                
-                # Rule violations
-                if anomaly_data.get('rule_violations'):
-                    violations = anomaly_data['rule_violations']
-                    anomaly_table_data.append([
-                        'Rule Violations',
-                        str(violations['count']),
-                        f"Severity: {violations['severity']}"
-                    ])
-                
-                if len(anomaly_table_data) > 1:
-                    anomaly_table = Table(anomaly_table_data, colWidths=[1.5*inch, 1*inch, 4*inch])
-                    anomaly_table.setStyle(TableStyle([
-                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e74c3c')),
-                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                if anomaly_data.get('anomaly_count', 0) > 0:
+                    elements.append(Paragraph(f"<b>Column: {col_name}</b>", subheading_style))
+                    
+                    # Anomaly summary table
+                    anomaly_table_data = [
+                        ['Metric', 'Value'],
+                        ['Expected Type', anomaly_data.get('expected_type', 'Unknown').title()],
+                        ['Total Values', str(anomaly_data.get('total_values', 0))],
+                        ['Anomalies Found', str(anomaly_data.get('anomaly_count', 0))],
+                        ['Anomaly Percentage', f"{anomaly_data.get('anomaly_percentage', 0):.2f}%"]
+                    ]
+                    
+                    anomaly_summary_table = Table(anomaly_table_data, colWidths=[2*inch, 4.5*inch])
+                    anomaly_summary_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), warning_color),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                        ('FONTSIZE', (0, 0), (-1, -1), 9),
-                        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-                        ('TOPPADDING', (0, 0), (-1, 0), 10),
-                        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#fadbd8')),
-                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#fadbd8'), colors.white])
+                        ('FONTSIZE', (0, 0), (-1, 0), 10),
+                        ('FONTSIZE', (0, 1), (-1, -1), 9),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('TOPPADDING', (0, 0), (-1, 0), 12),
+                        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+                        ('TOPPADDING', (0, 1), (-1, -1), 8),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#FFF4E6')),
+                        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#DEE2E6')),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#FFF4E6'), colors.white])
                     ]))
-                    elements.append(anomaly_table)
+                    elements.append(anomaly_summary_table)
+                    elements.append(Spacer(1, 0.15*inch))
+                    
+                    # Show sample anomalies if available
+                    anomalies_list = anomaly_data.get('anomalies', [])[:5]
+                    if anomalies_list:
+                        elements.append(Paragraph("<i>Sample Anomalies:</i>", normal_style))
+                        for anomaly in anomalies_list:
+                            elements.append(Paragraph(
+                                f"  • Row {anomaly.get('row_index', 'N/A')}: \"{anomaly.get('value', 'N/A')}\" - {anomaly.get('reason', 'Unknown reason')}",
+                                issue_style
+                            ))
                     elements.append(Spacer(1, 0.2*inch))
         else:
-            elements.append(Paragraph("No anomaly detection analysis performed.", normal_style))
+            elements.append(Paragraph(
+                "✅ No data type anomalies detected - all values match their declared types.",
+                success_style
+            ))
         
         elements.append(PageBreak())
         
@@ -1001,17 +1052,20 @@ All operations listed above can be independently verified and reproduced using t
                 
                 audit_table = Table(chunk, colWidths=[0.4*inch, 1.5*inch, 1.5*inch, 2*inch, 1.1*inch])
                 audit_table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#8e44ad')),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6C63FF')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                     ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, -1), 8),
-                    ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-                    ('TOPPADDING', (0, 0), (-1, 0), 10),
-                    ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#e8daef')),
-                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    ('FONTSIZE', (0, 0), (-1, 0), 9),
+                    ('FONTSIZE', (0, 1), (-1, -1), 8),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('TOPPADDING', (0, 0), (-1, 0), 12),
+                    ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+                    ('TOPPADDING', (0, 1), (-1, -1), 8),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#E8E7FD')),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#DEE2E6')),
                     ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#e8daef'), colors.white])
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#E8E7FD'), colors.white])
                 ]))
                 elements.append(audit_table)
                 
