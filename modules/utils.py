@@ -36,6 +36,13 @@ def initialize_session_state():
     if 'report_generator' not in st.session_state:
         from modules.report_generator import ReportGenerator
         st.session_state.report_generator = ReportGenerator()
+    if 'anomaly_detector' not in st.session_state:
+        from modules.anomaly_detector import AnomalyDetector
+        st.session_state.anomaly_detector = AnomalyDetector()
+    if 'anomaly_results' not in st.session_state:
+        st.session_state.anomaly_results = {}
+    if 'anomaly_last_updated' not in st.session_state:
+        st.session_state.anomaly_last_updated = None
 
 def detect_column_types(df: pd.DataFrame) -> Dict[str, str]:
     """Enhanced column type detection beyond basic pandas dtypes"""
