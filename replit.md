@@ -107,11 +107,12 @@ The AI assistant requires a GROQ_API_KEY environment variable to be set. Without
 ## Recent Changes
 - **2025-10-07 Hypothesis Testing & Enhanced Visualizations**: Added comprehensive statistical testing capabilities
   - ✅ **New Visualization Types**: Added KDE (Kernel Density Estimate) and Q-Q (Quantile-Quantile) plots to the Visualization page
+    * All visualizations including KDE and Q-Q plots properly save to PDF reports
   - ✅ **Hypothesis Testing Module**: Comprehensive statistical hypothesis testing with:
-    * 14 statistical tests: Welch's t-test, Mann-Whitney U, Pearson/Spearman correlations
+    * 15 statistical tests: One-sample t-test, Welch's t-test, Mann-Whitney U, Pearson/Spearman correlations
     * Chi-square, Fisher's exact test, One-way ANOVA, Kruskal-Wallis
-    * Tukey's HSD post-hoc, Two-proportion z-test, Paired t-test
-    * Simple linear regression, Logistic regression
+    * Tukey's HSD post-hoc, Two-proportion z-test, Paired t-test, Independent t-test
+    * Simple linear regression, Logistic regression (with proper target/predictor selection)
   - ✅ **Intelligent Test Recommendations**: Automatic test selection based on:
     * Data types (numeric/categorical)
     * Number of groups
@@ -129,7 +130,9 @@ The AI assistant requires a GROQ_API_KEY environment variable to be set. Without
     * Real-time recommendations
     * Results storage and visualization suggestions
     * Export to PDF reports
+    * Proper parameter handling for all test types
   - ✅ **Page Structure Update**: Reorganized navigation to include Hypothesis Analysis between Visualization and AI Assistant
+    * Pages renumbered: AI Assistant (5→6), Reports (6→7)
   
 
 - **2025-10-03 Performance Optimizations**: Comprehensive performance improvements across all features
