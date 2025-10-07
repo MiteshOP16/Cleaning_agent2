@@ -69,8 +69,8 @@ class AnomalyDetector:
         for idx in anomaly_indices:
             anomalies['anomalies'].append({
                 'row_index': idx,
-                'value': series.iloc[idx],
-                'reason': self._get_anomaly_reason(series.iloc[idx], expected_type)
+                'value': series.loc[idx],
+                'reason': self._get_anomaly_reason(series.loc[idx], expected_type)
             })
         
         anomalies['anomaly_count'] = len(anomaly_indices)
@@ -227,7 +227,7 @@ class AnomalyDetector:
             Tuple of (cleaned DataFrame, operation summary)
         """
         original_rows = len(df)
-        cleaned_df = df.drop(index=anomaly_indices).reset_index(drop=True)
+        cleaned_df = df.drop(index=anomaly_indices)
         
         summary = {
             'operation': 'remove_anomalies',

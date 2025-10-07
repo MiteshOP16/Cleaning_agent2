@@ -143,7 +143,7 @@ if selected_column:
                     col_show, col_replace = st.columns([2, 1])
                     
                     with col_show:
-                        row_data = df.iloc[anomaly['row_index']].to_dict()
+                        row_data = df.loc[anomaly['row_index']].to_dict()
                         st.json(row_data)
                     
                     with col_replace:
