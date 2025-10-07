@@ -561,10 +561,10 @@ with st.sidebar:
         st.switch_page("pages/2_Column_Analysis.py")
     
     if st.button("📊 Generate Report", width='stretch'):
-        st.switch_page("pages/6_Reports.py")
+        st.switch_page("pages/7_Reports.py")
     
     if st.button("🤖 AI Assistant", width='stretch'):
-        st.switch_page("pages/5_AI_Assistant.py")
+        st.switch_page("pages/6_AI_Assistant.py")
 
 st.divider()
 

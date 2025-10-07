@@ -36,8 +36,10 @@ def main():
     1. **Data Upload** - Upload and configure your dataset
     2. **Column Analysis** - Detailed analysis of individual columns  
     3. **Cleaning Wizard** - Apply cleaning methods with integrated weights
-    4. **AI Assistant** - Get expert advice and explanations
-    5. **Reports** - Generate comprehensive cleaning reports
+    4. **Visualization** - Create interactive visualizations
+    5. **Hypothesis Analysis** - Perform statistical hypothesis tests
+    6. **AI Assistant** - Get expert advice and explanations
+    7. **Reports** - Generate comprehensive cleaning reports
     """)
     
     # Display current dataset info if available

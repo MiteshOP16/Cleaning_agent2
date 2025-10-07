@@ -460,7 +460,7 @@ with st.sidebar:
         st.switch_page("pages/3_Cleaning_Wizard.py")
     
     if st.button("📊 Generate Reports", width='stretch'):
-        st.switch_page("pages/6_Reports.py")
+        st.switch_page("pages/7_Reports.py")
 
 # Footer with tips
 st.markdown("---")

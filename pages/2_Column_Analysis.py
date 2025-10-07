@@ -841,7 +841,7 @@ with st.sidebar:
             st.switch_page("pages/3_Cleaning_Wizard.py")
         
         if st.button("🤖 Ask AI About This Column", width='stretch'):
-            st.switch_page("pages/5_AI_Assistant.py")
+            st.switch_page("pages/6_AI_Assistant.py")
     
     # Analysis progress
     st.markdown("### 📊 Analysis Progress")

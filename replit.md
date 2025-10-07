@@ -27,14 +27,15 @@ This application helps data analysts and statisticians:
 │   ├── 1_Data_Upload.py           # Dataset upload and configuration
 │   ├── 2_Column_Analysis.py       # Individual column analysis
 │   ├── 3_Cleaning_Wizard.py       # Data cleaning operations with validation
-│   ├── 4_Visualization.py         # Custom visualizations (Phase 2)
-│   ├── 5_AI_Assistant.py          # AI-powered guidance
-│   ├── 6_Reports.py               # Report generation with exports
-│   └── 7_Anomaly_Detection.py     # Anomaly detection (Phase 2)
+│   ├── 4_Visualization.py         # Custom visualizations with KDE & Q-Q plots
+│   ├── 5_Hypothesis_Analysis.py   # Statistical hypothesis testing
+│   ├── 6_AI_Assistant.py          # AI-powered guidance
+│   └── 7_Reports.py               # Report generation with exports
 ├── modules/                        # Core functionality modules
 │   ├── ai_assistant.py            # AI assistant integration
 │   ├── cleaning_engine.py         # Data cleaning methods + validation
 │   ├── data_analyzer.py           # Column analysis engine
+│   ├── hypothesis_analysis.py     # Statistical hypothesis testing
 │   ├── report_generator.py        # Report generation
 │   ├── survey_weights.py          # Survey weights management
 │   ├── utils.py                   # Utility functions
@@ -104,6 +105,33 @@ The Streamlit app is configured to:
 The AI assistant requires a GROQ_API_KEY environment variable to be set. Without this key, the AI features will not be available, but all other functionality will work normally.
 
 ## Recent Changes
+- **2025-10-07 Hypothesis Testing & Enhanced Visualizations**: Added comprehensive statistical testing capabilities
+  - ✅ **New Visualization Types**: Added KDE (Kernel Density Estimate) and Q-Q (Quantile-Quantile) plots to the Visualization page
+  - ✅ **Hypothesis Testing Module**: Comprehensive statistical hypothesis testing with:
+    * 14 statistical tests: Welch's t-test, Mann-Whitney U, Pearson/Spearman correlations
+    * Chi-square, Fisher's exact test, One-way ANOVA, Kruskal-Wallis
+    * Tukey's HSD post-hoc, Two-proportion z-test, Paired t-test
+    * Simple linear regression, Logistic regression
+  - ✅ **Intelligent Test Recommendations**: Automatic test selection based on:
+    * Data types (numeric/categorical)
+    * Number of groups
+    * Distribution characteristics (normality testing)
+    * Sample sizes
+  - ✅ **Comprehensive Test Output**: Each test returns:
+    * Test statistic, p-value, degrees of freedom
+    * Effect size (Cohen's d, Cramér's V, R-squared, etc.)
+    * Confidence intervals
+    * Assumption checks with warnings
+    * Plain-English interpretations
+  - ✅ **Hypothesis Analysis Page**: New dedicated page (5_Hypothesis_Analysis.py) with:
+    * Intuitive variable selection interface
+    * Test category filtering (Basic Tests, ANOVA, Categorical, Regression, Advanced)
+    * Real-time recommendations
+    * Results storage and visualization suggestions
+    * Export to PDF reports
+  - ✅ **Page Structure Update**: Reorganized navigation to include Hypothesis Analysis between Visualization and AI Assistant
+  
+
 - **2025-10-03 Performance Optimizations**: Comprehensive performance improvements across all features
   - ✅ **Deterministic Caching System**: Implemented SHA256-based, order-aware caching in ColumnAnalyzer
     * Full-column hash that detects any data value or order changes

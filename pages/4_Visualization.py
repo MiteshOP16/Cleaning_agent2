@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 from modules.utils import initialize_session_state
@@ -53,7 +54,7 @@ with col1:
 with col2:
     viz_type = st.selectbox(
         "📊 Chart Type:",
-        options=['bar', 'line', 'scatter', 'box', 'violin', 'histogram', 'pie', 'heatmap', 'correlation'],
+        options=['bar', 'line', 'scatter', 'box', 'violin', 'histogram', 'kde', 'qq', 'pie', 'heatmap', 'correlation'],
         format_func=lambda x: {
             'bar': '📊 Bar Chart',
             'line': '📈 Line Chart',
@@ -61,6 +62,8 @@ with col2:
             'box': '📦 Box Plot',
             'violin': '🎻 Violin Plot',
             'histogram': '📊 Histogram',
+            'kde': '📈 KDE Plot',
+            'qq': '📉 Q-Q Plot',
             'pie': '🥧 Pie Chart',
             'heatmap': '🔥 Heatmap',
             'correlation': '🔗 Correlation Matrix'
@@ -104,7 +107,7 @@ if selected_columns:
                         value_counts = df[col].value_counts().head(20)
                         fig = px.bar(x=value_counts.index, y=value_counts.values,
                                    labels={'x': col, 'y': 'Count'}, title=chart_title)
-                        fig.update_xaxis(tickangle=-45)
+                        fig.update_xaxes(tickangle=-45)
                 elif len(selected_columns) == 2:
                     x_col, y_col = selected_columns[0], selected_columns[1]
                     if pd.api.types.is_numeric_dtype(df[y_col]):
@@ -189,6 +192,84 @@ if selected_columns:
                     fig.update_layout(title=chart_title, barmode='overlay', showlegend=show_legend)
                 else:
                     error_message = "No numeric columns selected for histogram."
+            
+            # KDE Plot (Kernel Density Estimate)
+            elif viz_type == 'kde':
+                from scipy import stats
+                fig = go.Figure()
+                for col in selected_columns:
+                    if pd.api.types.is_numeric_dtype(df[col]):
+                        data = df[col].dropna()
+                        if len(data) > 1:
+                            # Calculate KDE
+                            kde = stats.gaussian_kde(data)
+                            x_range = np.linspace(data.min(), data.max(), 200)
+                            y_kde = kde(x_range)
+                            
+                            fig.add_trace(go.Scatter(
+                                x=x_range,
+                                y=y_kde,
+                                name=col,
+                                mode='lines',
+                                fill='tozeroy',
+                                opacity=0.6
+                            ))
+                if fig.data:
+                    fig.update_layout(
+                        title=chart_title, 
+                        xaxis_title="Value", 
+                        yaxis_title="Density",
+                        showlegend=show_legend
+                    )
+                else:
+                    error_message = "No numeric columns with sufficient data for KDE plot."
+            
+            # Q-Q Plot (Quantile-Quantile)
+            elif viz_type == 'qq':
+                from scipy import stats
+                if len(selected_columns) == 1:
+                    col = selected_columns[0]
+                    if pd.api.types.is_numeric_dtype(df[col]):
+                        data = df[col].dropna()
+                        if len(data) > 1:
+                            # Calculate Q-Q plot points
+                            qq_data = stats.probplot(data, dist="norm")
+                            theoretical_quantiles = qq_data[0][0]
+                            sample_quantiles = qq_data[0][1]
+                            
+                            # Create scatter plot
+                            fig = go.Figure()
+                            fig.add_trace(go.Scatter(
+                                x=theoretical_quantiles,
+                                y=sample_quantiles,
+                                mode='markers',
+                                name='Data Points',
+                                marker=dict(color='blue', size=6)
+                            ))
+                            
+                            # Add reference line
+                            min_val = min(theoretical_quantiles.min(), sample_quantiles.min())
+                            max_val = max(theoretical_quantiles.max(), sample_quantiles.max())
+                            fig.add_trace(go.Scatter(
+                                x=[min_val, max_val],
+                                y=[min_val, max_val],
+                                mode='lines',
+                                name='Normal Distribution',
+                                line=dict(color='red', dash='dash')
+                            ))
+                            
+                            fig.update_layout(
+                                title=chart_title,
+                                xaxis_title="Theoretical Quantiles",
+                                yaxis_title="Sample Quantiles",
+                                showlegend=show_legend
+                            )
+                        else:
+                            error_message = "Insufficient data for Q-Q plot."
+                    else:
+                        error_message = "Q-Q plot requires a numeric column."
+                else:
+                    error_message = "Q-Q plot works with exactly 1 numeric column."
             
             # Pie Chart
             elif viz_type == 'pie':
@@ -358,7 +439,7 @@ if st.session_state.saved_visualizations:
     
     with action_cols[1]:
         if st.button("📊 Generate Report", type="primary", use_container_width=True):
-            st.switch_page("pages/6_Reports.py")
+            st.switch_page("pages/7_Reports.py")
 else:
     st.info("No visualizations saved yet. Create and save visualizations above to include them in your PDF reports.")
 
@@ -410,11 +491,13 @@ with st.expander("💡 Visualization Tips"):
     - **Box Plot**: Great for comparing distributions and identifying outliers
     - **Violin Plot**: Shows distribution density along with outlier information
     - **Histogram**: Excellent for understanding the frequency distribution of numeric data
+    - **KDE Plot**: Visualizes the probability density function of numeric data with smooth curves
+    - **Q-Q Plot**: Assesses if data follows a normal distribution by comparing sample quantiles with theoretical quantiles
     - **Pie Chart**: Use for showing proportions (works best with <10 categories)
     - **Heatmap/Correlation**: Visualize relationships between multiple numeric variables
     
     **Multi-Column Selection:**
-    - 1 column: Bar, line, histogram, pie, box, violin
+    - 1 column: Bar, line, histogram, KDE, Q-Q, pie, box, violin
     - 2 columns: Scatter, bar (x vs y), heatmap
     - 3+ columns: Scatter (with color/size), heatmap, correlation matrix
     
@@ -446,4 +529,4 @@ with nav_cols[1]:
 
 with nav_cols[2]:
     if st.button("📊 Generate PDF Report", use_container_width=True, type="primary"):
-        st.switch_page("pages/6_Reports.py")
+        st.switch_page("pages/7_Reports.py")
