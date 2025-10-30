@@ -14,7 +14,7 @@ st.set_page_config(
 def main():
     from modules.utils import initialize_session_state
     initialize_session_state()
-    st.title("🧹 Intelligent Data Cleaning Assistant")
+    st.title("Renvo AI - Intelligent Data Cleaning Assistant")
     
     st.markdown("""
     Welcome to the Survey Data Cleaning Assistant - an AI-powered tool designed specifically for statistical agencies.
