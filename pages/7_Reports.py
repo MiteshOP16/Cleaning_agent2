@@ -21,7 +21,7 @@ formatted according to official statistical release requirements.
 
 # Check if dataset is loaded
 if st.session_state.dataset is None:
-    st.warning("⚠️ No dataset loaded. Please upload a dataset in the Data Upload page first.")
+    st.warning("⚠️ No dataset loaded. Please upload a dataset on the Home page first.")
     st.stop()
 
 df = st.session_state.dataset

@@ -4,7 +4,7 @@ import numpy as np
 
 # Configure page
 st.set_page_config(
-    page_title=" Data Cleaning Assistant",
+    page_title="Data Cleaning Assistant",
     page_icon="🧹",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -12,7 +12,10 @@ st.set_page_config(
 
 
 def main():
-    from modules.utils import initialize_session_state
+    from modules.utils import initialize_session_state, detect_column_types, create_backup
+    from modules.data_analyzer import ColumnAnalyzer
+    import io
+    
     initialize_session_state()
     st.title("Renvo AI - Intelligent Data Cleaning Assistant")
     
@@ -33,47 +36,284 @@ def main():
     st.sidebar.markdown("Use the pages in the sidebar to navigate through the application:")
     
     st.sidebar.markdown("""
-    1. **Data Upload** - Upload and configure your dataset
-    2. **Anomaly Detection** - Detect and fix data type mismatches
-    3. **Column Analysis** - Detailed analysis of individual columns  
-    4. **Cleaning Wizard** - Apply cleaning methods with integrated weights
-    5. **Visualization** - Create interactive visualizations
-    6. **Hypothesis Analysis** - Perform statistical hypothesis tests
-    7. **AI Assistant** - Get expert advice and explanations
-    8. **Reports** - Generate comprehensive cleaning reports
+    1. **Anomaly Detection** - Detect and fix data type mismatches and duplicates
+    2. **Column Analysis** - Detailed analysis of individual columns  
+    3. **Cleaning Wizard** - Apply cleaning methods with integrated weights
+    4. **Visualization** - Create interactive visualizations
+    5. **Hypothesis Analysis** - Perform statistical hypothesis tests
+    6. **AI Assistant** - Get expert advice and explanations
+    7. **Reports** - Generate comprehensive cleaning reports
     """)
     
+    st.divider()
+    
+    # ========== DATA UPLOAD SECTION ==========
+    st.header("📊 Data Upload & Configuration")
+    
+    uploaded_file = st.file_uploader(
+        "Choose a CSV or Excel file",
+        type=['csv', 'xlsx', 'xls'],
+        help="Upload your survey dataset. Supported formats: CSV, Excel (.xlsx, .xls)"
+    )
+    
+    if uploaded_file is not None:
+        try:
+            # Load data based on file type
+            if uploaded_file.name.endswith('.csv'):
+                df = pd.read_csv(uploaded_file)
+            else:
+                df = pd.read_excel(uploaded_file)
+            
+            st.success(f"✅ Successfully loaded dataset with {len(df)} rows and {len(df.columns)} columns")
+            
+            # Store in session state
+            if st.session_state.dataset is None or not df.equals(st.session_state.dataset):
+                st.session_state.dataset = df.copy()
+                st.session_state.original_dataset = df.copy()
+                
+                # Auto-detect column types
+                st.session_state.column_types = detect_column_types(df)
+                
+                # Clear previous analysis
+                st.session_state.column_analysis = {}
+                st.session_state.cleaning_history = {}
+                st.session_state.undo_stack = []
+                st.session_state.redo_stack = []
+                
+                st.info("🔍 Column types automatically detected. You can review and modify them below.")
+            
+        except Exception as e:
+            st.error(f"❌ Error loading file: {str(e)}")
+            st.stop()
+    
     # Display current dataset info if available
-    if 'dataset' in st.session_state and st.session_state.dataset is not None:
-        st.subheader("📊 Current Dataset Overview")
+    if st.session_state.dataset is not None:
         df = st.session_state.dataset
         
+        st.divider()
+        st.subheader("📋 Dataset Overview")
+        
+        # Basic statistics
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("Rows", len(df))
+            st.metric("Total Rows", f"{len(df):,}")
         with col2:
-            st.metric("Columns", len(df.columns))
+            st.metric("Total Columns", len(df.columns))
         with col3:
-            st.metric("Missing Values", df.isnull().sum().sum())
+            st.metric("Missing Values", f"{df.isnull().sum().sum():,}")
         with col4:
-            cleaned_cols = len(st.session_state.get('cleaning_history', {}))
-            st.metric("Cleaned Columns", cleaned_cols)
+            st.metric("Memory Usage", f"{df.memory_usage(deep=True).sum() / 1024**2:.1f} MB")
         
-        st.dataframe(df.head(), width='stretch')
-    else:
-        st.info("👆 Please upload a dataset using the **Data Upload** page to get started.")
+        # Data preview
+        st.subheader("🔍 Data Preview")
         
-        # Quick start section
-        st.subheader("🚀 Quick Start Guide")
+        preview_options = st.columns([3, 1])
+        with preview_options[0]:
+            preview_rows = st.slider("Number of rows to preview", min_value=5, max_value=min(100, len(df)), value=10)
+        with preview_options[1]:
+            show_info = st.checkbox("Show column info", value=False)
+        
+        if show_info:
+            col_info = pd.DataFrame({
+                'Column': df.columns,
+                'Data Type': df.dtypes,
+                'Non-Null Count': df.count(),
+                'Missing Count': df.isnull().sum(),
+                'Missing %': (df.isnull().sum() / len(df) * 100).round(2),
+                'Unique Values': df.nunique()
+            })
+            
+            st.dataframe(col_info, use_container_width=True)
+        
+        st.dataframe(df.head(preview_rows), use_container_width=True)
+        
+        st.divider()
+        
+        # Column type configuration
+        st.subheader("⚙️ Column Type Configuration")
+        
         st.markdown("""
-        1. **Upload Your Data**: Go to the Data Upload page and select your CSV or Excel file
-        2. **Review Column Types**: The system will automatically detect column types - review and adjust as needed
-        3. **Check for Anomalies**: Use Anomaly Detection to find and fix data type mismatches
-        4. **Analyze Columns**: Use the Column Analysis page to examine each column individually
-        5. **Clean Your Data**: Apply appropriate cleaning methods using the Cleaning Wizard
-        6. **Get AI Help**: Use the AI Assistant for expert guidance and explanations
-        7. **Generate Reports**: Create comprehensive documentation of your cleaning process
+        **Important:** Correct column types are crucial for appropriate cleaning recommendations. 
+        Review the auto-detected types and adjust as needed.
         """)
+        
+        # Available column types
+        type_options = [
+            'continuous', 'integer', 'ordinal', 'categorical', 'binary', 
+            'text', 'datetime', 'empty', 'unknown'
+        ]
+        
+        type_descriptions = {
+            'continuous': 'Continuous numeric data (e.g., age, income, measurements)',
+            'integer': 'Integer numeric data (e.g., count of items, number of children)',
+            'ordinal': 'Ordered categories (e.g., education level, satisfaction rating)',
+            'categorical': 'Unordered categories (e.g., gender, region, occupation)',
+            'binary': 'Two-category variables (e.g., yes/no, male/female)',
+            'text': 'Free text data (e.g., comments, descriptions)',
+            'datetime': 'Date and time information',
+            'empty': 'Columns with no data',
+            'unknown': 'Unable to determine type automatically'
+        }
+        
+        # Display type legend
+        with st.expander("📖 Column Type Guide"):
+            for type_name, description in type_descriptions.items():
+                st.write(f"**{type_name.title()}:** {description}")
+        
+        # Column type editor
+        st.write("Review and adjust column types:")
+        
+        # Create columns for the editor
+        cols = st.columns([3, 2, 2, 1])
+        cols[0].write("**Column Name**")
+        cols[1].write("**Detected Type**")
+        cols[2].write("**Assigned Type**")
+        cols[3].write("**Sample Values**")
+        
+        updated_types = {}
+        
+        for i, col in enumerate(df.columns):
+            with st.container():
+                editor_cols = st.columns([3, 2, 2, 1])
+                
+                with editor_cols[0]:
+                    st.write(col)
+                
+                with editor_cols[1]:
+                    detected_type = st.session_state.column_types.get(col, 'unknown')
+                    st.write(f"`{detected_type}`")
+                
+                with editor_cols[2]:
+                    current_type = st.session_state.column_types.get(col, 'unknown')
+                    selected_type = st.selectbox(
+                        f"Type for {col}",
+                        type_options,
+                        index=type_options.index(current_type) if current_type in type_options else 0,
+                        key=f"type_{col}",
+                        label_visibility="collapsed"
+                    )
+                    updated_types[col] = selected_type
+                
+                with editor_cols[3]:
+                    sample_values = df[col].dropna().head(3).tolist()
+                    sample_text = ", ".join([str(v)[:20] + "..." if len(str(v)) > 20 else str(v) for v in sample_values])
+                    st.write(f"`{sample_text}`")
+        
+        # Update button
+        col_update, col_analyze = st.columns([1, 1])
+        
+        with col_update:
+            if st.button("💾 Update Column Types", type="primary", use_container_width=True):
+                st.session_state.column_types = updated_types
+                st.success("✅ Column types updated successfully!")
+                st.rerun()
+        
+        with col_analyze:
+            if st.button("🔍 Start Column Analysis", use_container_width=True):
+                if any(updated_types.values()):
+                    st.session_state.column_types = updated_types
+                    
+                    # Initialize analyzer and run basic analysis
+                    analyzer = ColumnAnalyzer()
+                    
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    for i, col in enumerate(df.columns):
+                        status_text.text(f"Analyzing column: {col}")
+                        try:
+                            analysis = analyzer.analyze_column(df, col)
+                            st.session_state.column_analysis[col] = analysis
+                        except Exception as e:
+                            st.warning(f"⚠️ Error analyzing column {col}: {str(e)}")
+                        
+                        progress_bar.progress((i + 1) / len(df.columns))
+                    
+                    status_text.text("Analysis complete!")
+                    st.success("🎉 Column analysis completed! Navigate to the Column Analysis page to view results.")
+                    
+                    # Auto-navigate suggestion
+                    st.info("💡 **Next Step:** Go to the **Column Analysis** page to review detailed analysis results for each column.")
+                else:
+                    st.error("Please configure column types before starting analysis.")
+        
+        st.divider()
+        
+        # Configuration export/import
+        st.subheader("💾 Configuration Management")
+        
+        config_cols = st.columns([1, 1])
+        
+        with config_cols[0]:
+            if st.button("📤 Export Configuration", use_container_width=True):
+                from modules.utils import export_configuration
+                config_json = export_configuration()
+                st.download_button(
+                    label="💾 Download Configuration",
+                    data=config_json,
+                    file_name=f"data_config_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.json",
+                    mime="application/json"
+                )
+        
+        with config_cols[1]:
+            config_file = st.file_uploader(
+                "📥 Import Configuration",
+                type=['json'],
+                help="Upload a previously exported configuration file"
+            )
+            
+            if config_file is not None:
+                try:
+                    config_content = config_file.read().decode('utf-8')
+                    from modules.utils import import_configuration
+                    
+                    if import_configuration(config_content):
+                        st.success("✅ Configuration imported successfully!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to import configuration")
+                except Exception as e:
+                    st.error(f"❌ Error importing configuration: {str(e)}")
+        
+        # Data quality warning
+        if df.isnull().sum().sum() > len(df) * len(df.columns) * 0.2:
+            st.warning("⚠️ **High Missing Data Rate:** This dataset has more than 20% missing values. Consider reviewing data collection processes.")
+        
+        if len(df) > 50000:
+            st.info("ℹ️ **Large Dataset:** Processing may take longer for datasets with more than 50,000 rows. Consider using sampling for initial exploration.")
+    
+    else:
+        st.info("👆 Please upload a dataset to get started with the data cleaning process.")
+        
+        # Help section for users without data
+        with st.expander("📚 Getting Started Guide"):
+            st.markdown("""
+            ### How to Use This Data Cleaning Assistant
+            
+            1. **Upload Your Data**: Use the file uploader above to select your CSV or Excel file
+            2. **Review Column Types**: The system will automatically detect column types, but you should verify them
+            3. **Configure Settings**: Adjust any column types that weren't detected correctly
+            4. **Start Analysis**: Click "Start Column Analysis" to begin the cleaning process
+            
+            ### Supported File Formats
+            - **CSV files** (.csv): Comma-separated values
+            - **Excel files** (.xlsx, .xls): Microsoft Excel formats
+            
+            ### Best Practices
+            - Ensure your data has column headers in the first row
+            - Remove any summary rows or metadata from the top of your file
+            - Keep file sizes reasonable (under 100MB for best performance)
+            - Have a clear understanding of what each column represents
+            
+            ### Column Type Importance
+            Correctly identifying column types is crucial because:
+            - **Continuous**: Gets outlier detection, normality tests, advanced imputation
+            - **Categorical**: Gets frequency analysis, mode imputation, consistency checks
+            - **Ordinal**: Gets order-preserving operations, median imputation
+            - **Binary**: Gets specialized binary analysis and imputation
+            - **Text**: Gets text cleaning, standardization, pattern analysis
+            """)
+
 
 if __name__ == "__main__":
     main()
