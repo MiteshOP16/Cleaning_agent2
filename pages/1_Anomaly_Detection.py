@@ -255,7 +255,13 @@ with tab1:
 with tab2:
     st.divider()
     
-    st.subheader("1. Detect Duplicates")
+    st.subheader("1. Detect Complete Duplicate Rows")
+    
+    st.info("""
+    **Note:** This feature removes **complete duplicate rows** where all values match.
+    - If no columns are selected: Entire rows must be identical to be considered duplicates
+    - If specific columns are selected: Only those columns must match for rows to be duplicates
+    """)
     
     # Detect duplicates
     total_duplicates = df.duplicated().sum()
@@ -265,7 +271,7 @@ with tab2:
     with col1:
         st.metric("Total Rows", f"{len(df):,}")
     with col2:
-        st.metric("Duplicate Rows", f"{total_duplicates:,}")
+        st.metric("Complete Duplicate Rows", f"{total_duplicates:,}")
     with col3:
         if len(df) > 0:
             dup_percentage = (total_duplicates / len(df)) * 100
@@ -282,10 +288,10 @@ with tab2:
     
     with col_option1:
         duplicate_subset = st.multiselect(
-            "Select columns to check for duplicates (leave empty for all columns)",
+            "Select columns to check for duplicates (leave empty to check ALL columns)",
             options=list(df.columns),
             default=None,
-            help="Choose specific columns to identify duplicates. If empty, all columns will be used."
+            help="Choose specific columns to identify duplicates. If empty, all columns in the row must match for duplicates."
         )
     
     with col_option2:
@@ -298,9 +304,11 @@ with tab2:
     # Re-detect duplicates based on selected columns
     if duplicate_subset:
         total_duplicates_subset = df.duplicated(subset=duplicate_subset, keep=False).sum()
-        st.info(f"🔍 Found **{total_duplicates_subset:,}** duplicate rows based on selected columns: {', '.join(duplicate_subset)}")
+        st.warning(f"🔍 Found **{total_duplicates_subset:,}** rows where these columns are identical: {', '.join(duplicate_subset)}")
+        st.caption(f"⚠️ **Complete rows** will be removed if the selected columns match, even if other columns differ.")
     else:
-        st.info(f"🔍 Checking duplicates across **all columns**")
+        st.success(f"🔍 Checking for **complete duplicate rows** (all {len(df.columns)} columns must match)")
+        st.caption(f"✓ Only rows that are 100% identical across all columns will be removed.")
     
     st.divider()
     
