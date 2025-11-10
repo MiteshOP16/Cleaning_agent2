@@ -177,7 +177,7 @@ class HypothesisAnalyzer:
     def welch_ttest(self, df: pd.DataFrame, numeric_col: str, group_col: str) -> Dict[str, Any]:
         """Welch's t-test (doesn't assume equal variances)"""
         try:
-            groups = df[group_col].unique()[:2]
+            groups = df[group_col].dropna().unique()[:2]
             group1 = df[df[group_col] == groups[0]][numeric_col].dropna()
             group2 = df[df[group_col] == groups[1]][numeric_col].dropna()
             
@@ -232,7 +232,7 @@ class HypothesisAnalyzer:
     def mann_whitney(self, df: pd.DataFrame, numeric_col: str, group_col: str) -> Dict[str, Any]:
         """Mann-Whitney U test (non-parametric alternative to t-test)"""
         try:
-            groups = df[group_col].unique()[:2]
+            groups = df[group_col].dropna().unique()[:2]
             group1 = df[df[group_col] == groups[0]][numeric_col].dropna()
             group2 = df[df[group_col] == groups[1]][numeric_col].dropna()
             
@@ -437,7 +437,8 @@ class HypothesisAnalyzer:
         """One-way ANOVA"""
         try:
             # Get groups
-            groups = [df[df[group_col] == cat][numeric_col].dropna() for cat in df[group_col].unique()]
+            valid_categories = df[group_col].dropna().unique()
+            groups = [df[df[group_col] == cat][numeric_col].dropna() for cat in valid_categories]
             groups = [g for g in groups if len(g) > 0]
             
             if len(groups) < 2:
@@ -476,7 +477,7 @@ class HypothesisAnalyzer:
                 'confidence_interval': {'level': 'N/A', 'interval': 'N/A'},
                 'alpha': self.alpha,
                 'decision': 'At least one group mean differs' if p_value < self.alpha else 'No significant difference',
-                'sample_sizes': {str(cat): len(df[df[group_col] == cat][numeric_col].dropna()) for cat in df[group_col].unique()},
+                'sample_sizes': {str(cat): len(df[df[group_col] == cat][numeric_col].dropna()) for cat in valid_categories},
                 'missing_count': df[numeric_col].isna().sum(),
                 'assumption_checks': assumptions,
                 'group_stats': {
@@ -484,7 +485,7 @@ class HypothesisAnalyzer:
                         'mean': float(df[df[group_col] == cat][numeric_col].mean()),
                         'std': float(df[df[group_col] == cat][numeric_col].std()),
                         'n': len(df[df[group_col] == cat][numeric_col].dropna())
-                    } for cat in df[group_col].unique()
+                    } for cat in valid_categories
                 },
                 'visualizations': ['box_plot', 'violin_plot'],
                 'interpretation': f"{'At least one group mean differs significantly' if p_value < self.alpha else 'No significant differences'} across groups (F = {f_stat:.2f}, p = {p_value:.4f})",
@@ -498,7 +499,8 @@ class HypothesisAnalyzer:
         """Kruskal-Wallis H test (non-parametric alternative to ANOVA)"""
         try:
             # Get groups
-            groups = [df[df[group_col] == cat][numeric_col].dropna() for cat in df[group_col].unique()]
+            valid_categories = df[group_col].dropna().unique()
+            groups = [df[df[group_col] == cat][numeric_col].dropna() for cat in valid_categories]
             groups = [g for g in groups if len(g) > 0]
             
             if len(groups) < 2:
@@ -521,7 +523,7 @@ class HypothesisAnalyzer:
                 'confidence_interval': {'level': 'N/A', 'interval': 'N/A'},
                 'alpha': self.alpha,
                 'decision': 'At least one group distribution differs' if p_value < self.alpha else 'No significant difference',
-                'sample_sizes': {str(cat): len(df[df[group_col] == cat][numeric_col].dropna()) for cat in df[group_col].unique()},
+                'sample_sizes': {str(cat): len(df[df[group_col] == cat][numeric_col].dropna()) for cat in valid_categories},
                 'missing_count': df[numeric_col].isna().sum(),
                 'assumption_checks': {'independence': 'Assumed', 'ordinal_or_continuous': 'Yes'},
                 'group_stats': {
@@ -529,7 +531,7 @@ class HypothesisAnalyzer:
                         'median': float(df[df[group_col] == cat][numeric_col].median()),
                         'mean_rank': float(df[df[group_col] == cat][numeric_col].rank().mean()),
                         'n': len(df[df[group_col] == cat][numeric_col].dropna())
-                    } for cat in df[group_col].unique()
+                    } for cat in valid_categories
                 },
                 'visualizations': ['box_plot', 'violin_plot'],
                 'notes': 'Non-parametric test - does not assume normal distribution',
@@ -803,6 +805,393 @@ class HypothesisAnalyzer:
         except Exception as e:
             return {'error': str(e)}
     
+    def independent_ttest(self, df: pd.DataFrame, numeric_col: str, group_col: str) -> Dict[str, Any]:
+        """Independent t-test (assumes equal variances)"""
+        try:
+            groups = df[group_col].dropna().unique()[:2]
+            group1 = df[df[group_col] == groups[0]][numeric_col].dropna()
+            group2 = df[df[group_col] == groups[1]][numeric_col].dropna()
+            
+            if len(group1) < 2 or len(group2) < 2:
+                return {'error': 'Insufficient data in one or both groups'}
+            
+            statistic, p_value = stats.ttest_ind(group1, group2, equal_var=True)
+            pooled_std = np.sqrt(((len(group1)-1)*group1.std()**2 + (len(group2)-1)*group2.std()**2) / (len(group1)+len(group2)-2))
+            cohens_d = (group1.mean() - group2.mean()) / pooled_std if pooled_std > 0 else 0
+            
+            levene_stat, levene_p = stats.levene(group1, group2)
+            assumptions = {
+                'equal_variance': {'statistic': float(levene_stat), 'p_value': float(levene_p), 'passed': levene_p > 0.05},
+                'normality_group1': self._check_normality(group1),
+                'normality_group2': self._check_normality(group2)
+            }
+            
+            return {
+                'test_name': 'Independent t-test',
+                'statistic': float(statistic),
+                'p_value': float(p_value),
+                'df': len(group1) + len(group2) - 2,
+                'effect_size': {'type': "Cohen's d", 'value': float(cohens_d)},
+                'confidence_interval': {'level': f'{(1-self.alpha)*100}%', 'interval': 'N/A'},
+                'alpha': self.alpha,
+                'decision': 'Reject H0' if p_value < self.alpha else 'Fail to reject H0',
+                'assumption_checks': assumptions,
+                'interpretation': self._interpret_ttest(p_value, cohens_d, groups[0], groups[1]),
+                'warnings': ['Use Welch\'s t-test if variances are unequal'] if not assumptions['equal_variance']['passed'] else []
+            }
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def wilcoxon_signed_rank(self, df: pd.DataFrame, col1: str, col2: str) -> Dict[str, Any]:
+        """Wilcoxon Signed-Rank test (non-parametric paired test)"""
+        try:
+            valid_data = df[[col1, col2]].dropna()
+            if len(valid_data) < 5:
+                return {'error': 'Insufficient paired data (need at least 5 pairs)'}
+            
+            statistic, p_value = stats.wilcoxon(valid_data[col1], valid_data[col2])
+            r = statistic / (len(valid_data) * (len(valid_data) + 1) / 2)
+            
+            return {
+                'test_name': 'Wilcoxon Signed-Rank Test',
+                'statistic': float(statistic),
+                'p_value': float(p_value),
+                'df': None,
+                'effect_size': {'type': 'Rank-biserial correlation', 'value': float(r)},
+                'confidence_interval': {'level': 'N/A', 'interval': 'N/A'},
+                'alpha': self.alpha,
+                'decision': 'Significant difference' if p_value < self.alpha else 'No significant difference',
+                'sample_sizes': {'n_pairs': len(valid_data)},
+                'interpretation': f"Non-parametric test shows {'significant' if p_value < self.alpha else 'no significant'} difference between paired samples (p = {p_value:.4f})",
+                'notes': 'Non-parametric alternative to paired t-test'
+            }
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def sign_test(self, df: pd.DataFrame, col1: str, col2: str) -> Dict[str, Any]:
+        """Sign test (non-parametric paired test)"""
+        try:
+            valid_data = df[[col1, col2]].dropna()
+            differences = valid_data[col1] - valid_data[col2]
+            differences = differences[differences != 0]
+            
+            if len(differences) < 5:
+                return {'error': 'Insufficient non-zero differences'}
+            
+            n_positive = (differences > 0).sum()
+            n = len(differences)
+            p_value = 2 * min(stats.binom.cdf(n_positive, n, 0.5), 1 - stats.binom.cdf(n_positive-1, n, 0.5))
+            
+            return {
+                'test_name': 'Sign Test',
+                'statistic': int(n_positive),
+                'p_value': float(p_value),
+                'df': None,
+                'effect_size': {'type': 'Proportion positive', 'value': float(n_positive/n)},
+                'confidence_interval': {'level': 'N/A', 'interval': 'N/A'},
+                'alpha': self.alpha,
+                'decision': 'Significant difference' if p_value < self.alpha else 'No significant difference',
+                'sample_sizes': {'n_pairs': n, 'n_positive': int(n_positive), 'n_negative': int(n - n_positive)},
+                'interpretation': f"Sign test: {n_positive}/{n} pairs favor {col1} over {col2} (p = {p_value:.4f})",
+                'notes': 'Most robust non-parametric paired test'
+            }
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def kendall_tau(self, df: pd.DataFrame, col1: str, col2: str) -> Dict[str, Any]:
+        """Kendall's Tau correlation coefficient"""
+        try:
+            valid_data = df[[col1, col2]].dropna()
+            if len(valid_data) < 3:
+                return {'error': 'Insufficient data for correlation'}
+            
+            tau, p_value = stats.kendalltau(valid_data[col1], valid_data[col2])
+            
+            return {
+                'test_name': "Kendall's Tau",
+                'statistic': float(tau),
+                'p_value': float(p_value),
+                'df': len(valid_data) - 2,
+                'effect_size': {'type': "Kendall's Tau", 'value': float(tau)},
+                'confidence_interval': {'level': 'N/A', 'interval': 'N/A'},
+                'alpha': self.alpha,
+                'decision': 'Significant correlation' if p_value < self.alpha else 'No significant correlation',
+                'sample_sizes': {'n': len(valid_data)},
+                'interpretation': f"Kendall's Tau = {tau:.3f} (p = {p_value:.4f}). {'Significant' if p_value < self.alpha else 'No significant'} monotonic association.",
+                'notes': 'Robust to outliers, better for small samples than Spearman'
+            }
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def shapiro_wilk_test(self, df: pd.DataFrame, column: str) -> Dict[str, Any]:
+        """Shapiro-Wilk normality test"""
+        try:
+            data = df[column].dropna()
+            if len(data) < 3:
+                return {'error': 'Need at least 3 observations'}
+            if len(data) > 5000:
+                data = data.sample(5000, random_state=42)
+                
+            statistic, p_value = stats.shapiro(data)
+            
+            return {
+                'test_name': 'Shapiro-Wilk Normality Test',
+                'statistic': float(statistic),
+                'p_value': float(p_value),
+                'df': None,
+                'effect_size': {'type': 'W statistic', 'value': float(statistic)},
+                'confidence_interval': {'level': 'N/A', 'interval': 'N/A'},
+                'alpha': self.alpha,
+                'decision': 'Data is NOT normally distributed' if p_value < self.alpha else 'Data appears normally distributed',
+                'sample_sizes': {'n': len(data)},
+                'interpretation': f"Shapiro-Wilk test: W = {statistic:.4f}, p = {p_value:.4f}. Data {'deviates significantly from' if p_value < self.alpha else 'is consistent with'} normal distribution.",
+                'notes': 'Most powerful normality test for small to medium samples'
+            }
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def ks_test(self, df: pd.DataFrame, column: str, distribution: str = 'norm') -> Dict[str, Any]:
+        """Kolmogorov-Smirnov goodness-of-fit test"""
+        try:
+            data = df[column].dropna()
+            if len(data) < 3:
+                return {'error': 'Need at least 3 observations'}
+            
+            if distribution == 'norm':
+                statistic, p_value = stats.kstest(data, 'norm', args=(data.mean(), data.std()))
+                dist_name = 'Normal'
+            elif distribution == 'uniform':
+                statistic, p_value = stats.kstest(data, 'uniform', args=(data.min(), data.max()-data.min()))
+                dist_name = 'Uniform'
+            else:
+                return {'error': f'Unsupported distribution: {distribution}'}
+            
+            return {
+                'test_name': 'Kolmogorov-Smirnov Test',
+                'statistic': float(statistic),
+                'p_value': float(p_value),
+                'df': None,
+                'effect_size': {'type': 'KS statistic', 'value': float(statistic)},
+                'confidence_interval': {'level': 'N/A', 'interval': 'N/A'},
+                'alpha': self.alpha,
+                'decision': f'Data is NOT {dist_name} distributed' if p_value < self.alpha else f'Data appears {dist_name} distributed',
+                'sample_sizes': {'n': len(data)},
+                'interpretation': f"KS test: D = {statistic:.4f}, p = {p_value:.4f}. Data {'deviates from' if p_value < self.alpha else 'is consistent with'} {dist_name} distribution.",
+                'notes': 'General goodness-of-fit test, sensitive to differences in location and shape'
+            }
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def anderson_darling_test(self, df: pd.DataFrame, column: str) -> Dict[str, Any]:
+        """Anderson-Darling normality test"""
+        try:
+            data = df[column].dropna()
+            if len(data) < 3:
+                return {'error': 'Need at least 3 observations'}
+            
+            result = stats.anderson(data, dist='norm')
+            critical_value_5 = result.critical_values[2]
+            
+            return {
+                'test_name': 'Anderson-Darling Normality Test',
+                'statistic': float(result.statistic),
+                'p_value': 'See critical values',
+                'df': None,
+                'effect_size': {'type': 'A² statistic', 'value': float(result.statistic)},
+                'confidence_interval': {'level': 'N/A', 'interval': 'N/A'},
+                'alpha': self.alpha,
+                'decision': 'Data is NOT normally distributed' if result.statistic > critical_value_5 else 'Data appears normally distributed',
+                'sample_sizes': {'n': len(data)},
+                'critical_values': {'significance_levels': result.significance_level.tolist(), 'critical_values': result.critical_values.tolist()},
+                'interpretation': f"Anderson-Darling: A² = {result.statistic:.4f}. Data {'deviates from' if result.statistic > critical_value_5 else 'is consistent with'} normal distribution (at 5% level).",
+                'notes': 'More sensitive to tails than Shapiro-Wilk'
+            }
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def chi_square_gof(self, df: pd.DataFrame, column: str, expected_freq: Optional[List[float]] = None) -> Dict[str, Any]:
+        """Chi-square goodness-of-fit test"""
+        try:
+            observed = df[column].value_counts().sort_index()
+            
+            if expected_freq is None:
+                expected_freq = [len(df[column]) / len(observed)] * len(observed)
+            
+            if len(observed) != len(expected_freq):
+                return {'error': 'Length of expected frequencies must match number of categories'}
+            
+            chi2, p_value = stats.chisquare(observed.values, expected_freq)
+            
+            return {
+                'test_name': 'Chi-Square Goodness-of-Fit Test',
+                'statistic': float(chi2),
+                'p_value': float(p_value),
+                'df': len(observed) - 1,
+                'effect_size': {'type': 'Chi-square', 'value': float(chi2)},
+                'confidence_interval': {'level': 'N/A', 'interval': 'N/A'},
+                'alpha': self.alpha,
+                'decision': 'Observed distribution differs from expected' if p_value < self.alpha else 'Observed distribution matches expected',
+                'sample_sizes': {'n': int(observed.sum())},
+                'observed_frequencies': observed.to_dict(),
+                'expected_frequencies': dict(zip(observed.index, expected_freq)),
+                'interpretation': f"Chi-square GOF: χ² = {chi2:.2f}, p = {p_value:.4f}. Observed distribution {'differs significantly from' if p_value < self.alpha else 'matches'} expected distribution.",
+                'notes': 'Tests if categorical data follows expected distribution'
+            }
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def levene_test(self, df: pd.DataFrame, numeric_col: str, group_col: str) -> Dict[str, Any]:
+        """Levene's test for equality of variances"""
+        try:
+            valid_categories = df[group_col].dropna().unique()
+            groups = [df[df[group_col] == cat][numeric_col].dropna() for cat in valid_categories]
+            groups = [g for g in groups if len(g) > 0]
+            
+            if len(groups) < 2:
+                return {'error': 'Need at least 2 groups'}
+            
+            statistic, p_value = stats.levene(*groups)
+            
+            return {
+                'test_name': "Levene's Test for Equality of Variances",
+                'statistic': float(statistic),
+                'p_value': float(p_value),
+                'df': {'between': len(groups) - 1, 'within': sum(len(g) for g in groups) - len(groups)},
+                'effect_size': {'type': 'Levene statistic', 'value': float(statistic)},
+                'confidence_interval': {'level': 'N/A', 'interval': 'N/A'},
+                'alpha': self.alpha,
+                'decision': 'Variances are NOT equal' if p_value < self.alpha else 'Variances appear equal',
+                'sample_sizes': {str(i): len(g) for i, g in enumerate(groups)},
+                'interpretation': f"Levene's test: W = {statistic:.4f}, p = {p_value:.4f}. Variances {'differ significantly' if p_value < self.alpha else 'do not differ significantly'} across groups.",
+                'notes': 'Used to test homogeneity of variance assumption for ANOVA'
+            }
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def bartlett_test(self, df: pd.DataFrame, numeric_col: str, group_col: str) -> Dict[str, Any]:
+        """Bartlett's test for equality of variances"""
+        try:
+            valid_categories = df[group_col].dropna().unique()
+            groups = [df[df[group_col] == cat][numeric_col].dropna() for cat in valid_categories]
+            groups = [g for g in groups if len(g) > 0]
+            
+            if len(groups) < 2:
+                return {'error': 'Need at least 2 groups'}
+            
+            statistic, p_value = stats.bartlett(*groups)
+            
+            return {
+                'test_name': "Bartlett's Test for Equality of Variances",
+                'statistic': float(statistic),
+                'p_value': float(p_value),
+                'df': len(groups) - 1,
+                'effect_size': {'type': 'Bartlett statistic', 'value': float(statistic)},
+                'confidence_interval': {'level': 'N/A', 'interval': 'N/A'},
+                'alpha': self.alpha,
+                'decision': 'Variances are NOT equal' if p_value < self.alpha else 'Variances appear equal',
+                'sample_sizes': {str(i): len(g) for i, g in enumerate(groups)},
+                'interpretation': f"Bartlett's test: T = {statistic:.4f}, p = {p_value:.4f}. Variances {'differ significantly' if p_value < self.alpha else 'do not differ significantly'} across groups.",
+                'notes': 'More sensitive to normality than Levene test',
+                'warnings': ['Assumes normal distributions'] if not all(self._check_normality(g) for g in groups if len(g) > 2) else []
+            }
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def mcnemar_test(self, df: pd.DataFrame, col1: str, col2: str) -> Dict[str, Any]:
+        """McNemar's test for paired nominal data"""
+        try:
+            contingency = pd.crosstab(df[col1], df[col2])
+            
+            if contingency.shape != (2, 2):
+                return {'error': 'McNemar test requires 2x2 contingency table'}
+            
+            b = contingency.iloc[0, 1]
+            c = contingency.iloc[1, 0]
+            
+            if b + c < 25:
+                statistic = (abs(b - c) - 1)**2 / (b + c) if (b + c) > 0 else 0
+            else:
+                statistic = (b - c)**2 / (b + c) if (b + c) > 0 else 0
+            
+            p_value = 1 - stats.chi2.cdf(statistic, 1)
+            
+            return {
+                'test_name': "McNemar's Test",
+                'statistic': float(statistic),
+                'p_value': float(p_value),
+                'df': 1,
+                'effect_size': {'type': 'Odds ratio', 'value': float(b/c) if c > 0 else float('inf')},
+                'confidence_interval': {'level': 'N/A', 'interval': 'N/A'},
+                'alpha': self.alpha,
+                'decision': 'Significant change' if p_value < self.alpha else 'No significant change',
+                'sample_sizes': {'n': int(contingency.sum().sum()), 'discordant_pairs': int(b + c)},
+                'contingency_table': contingency.to_dict(),
+                'interpretation': f"McNemar's test: χ² = {statistic:.2f}, p = {p_value:.4f}. {'Significant' if p_value < self.alpha else 'No significant'} change in proportions.",
+                'notes': 'Used for paired nominal data (before/after designs)'
+            }
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def ks_two_sample(self, df: pd.DataFrame, numeric_col: str, group_col: str) -> Dict[str, Any]:
+        """Kolmogorov-Smirnov two-sample test"""
+        try:
+            groups = df[group_col].dropna().unique()[:2]
+            group1 = df[df[group_col] == groups[0]][numeric_col].dropna()
+            group2 = df[df[group_col] == groups[1]][numeric_col].dropna()
+            
+            if len(group1) < 2 or len(group2) < 2:
+                return {'error': 'Insufficient data in one or both groups'}
+            
+            statistic, p_value = stats.ks_2samp(group1, group2)
+            
+            return {
+                'test_name': 'Kolmogorov-Smirnov Two-Sample Test',
+                'statistic': float(statistic),
+                'p_value': float(p_value),
+                'df': None,
+                'effect_size': {'type': 'KS statistic', 'value': float(statistic)},
+                'confidence_interval': {'level': 'N/A', 'interval': 'N/A'},
+                'alpha': self.alpha,
+                'decision': 'Distributions differ' if p_value < self.alpha else 'Distributions do not differ significantly',
+                'sample_sizes': {'group1': len(group1), 'group2': len(group2)},
+                'interpretation': f"KS two-sample: D = {statistic:.4f}, p = {p_value:.4f}. Distributions {'differ significantly' if p_value < self.alpha else 'do not differ significantly'}.",
+                'notes': 'Tests if two samples come from same distribution'
+            }
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def one_sample_proportion_ztest(self, df: pd.DataFrame, column: str, success_value: Any, test_proportion: float = 0.5) -> Dict[str, Any]:
+        """One-sample Z-test for proportion"""
+        try:
+            data = df[column].dropna()
+            successes = (data == success_value).sum()
+            n = len(data)
+            
+            if n < 30:
+                return {'error': 'Sample size too small (need n >= 30)'}
+            
+            p_hat = successes / n
+            z_stat = (p_hat - test_proportion) / np.sqrt(test_proportion * (1 - test_proportion) / n)
+            p_value = 2 * (1 - stats.norm.cdf(abs(z_stat)))
+            
+            return {
+                'test_name': 'One-Sample Proportion Z-Test',
+                'statistic': float(z_stat),
+                'p_value': float(p_value),
+                'df': None,
+                'effect_size': {'type': 'Difference from null', 'value': float(p_hat - test_proportion)},
+                'confidence_interval': {'level': f'{(1-self.alpha)*100}%', 'interval': (float(p_hat - 1.96*np.sqrt(p_hat*(1-p_hat)/n)), float(p_hat + 1.96*np.sqrt(p_hat*(1-p_hat)/n)))},
+                'alpha': self.alpha,
+                'decision': f'Proportion differs from {test_proportion}' if p_value < self.alpha else f'Proportion does not differ from {test_proportion}',
+                'sample_sizes': {'n': n, 'successes': int(successes)},
+                'sample_proportion': float(p_hat),
+                'test_proportion': float(test_proportion),
+                'interpretation': f"Observed proportion = {p_hat:.3f}, test value = {test_proportion}. {'Significant difference' if p_value < self.alpha else 'No significant difference'} (z = {z_stat:.2f}, p = {p_value:.4f}).",
+                'notes': 'Requires large sample size for normal approximation'
+            }
+        except Exception as e:
+            return {'error': str(e)}
+
     # Helper methods
     def _infer_type(self, series: pd.Series) -> str:
         """Infer if column is numeric or categorical"""
