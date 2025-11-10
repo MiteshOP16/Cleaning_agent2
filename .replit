@@ -1,4 +1,4 @@
-modules = ["python-3.11"]
+modules = ["python-3.12"]
 [agent]
 expertMode = true
 
@@ -41,10 +41,6 @@ externalPort = 3000
 [[ports]]
 localPort = 37651
 externalPort = 3001
-
-[[ports]]
-localPort = 43805
-externalPort = 3002
 
 [deployment]
 deploymentTarget = "autoscale"
