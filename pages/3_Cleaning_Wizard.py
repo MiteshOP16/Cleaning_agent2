@@ -9,7 +9,7 @@ from modules.ai_assistant import AIAssistant
 from modules.survey_weights import SurveyWeightsManager
 
 # Initialize session state
-initialize_session_state()
+
 
 st.title("🧙‍♀️ Data Cleaning Wizard with Integrated Weights")
 
