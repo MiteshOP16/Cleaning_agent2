@@ -32,9 +32,10 @@ def main():
         'column_types': st.session_state.column_types
     }
     
-    assistant.set_context(dataset_info) # Initialize conversation history in session state
+    assistant.set_context(dataset_info)
+    # Initialize conversation history in session state
     if 'ai_conversation' not in st.session_state:
-    st.session_state.ai_conversation = []
+        st.session_state.ai_conversation = []
 
 # AI Assistant Interface
 st.subheader("💬 Conversation")
