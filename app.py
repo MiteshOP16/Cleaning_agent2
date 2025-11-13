@@ -3,8 +3,18 @@ import pandas as pd
 import numpy as np
 import traceback
 
+# MUST be the very first Streamlit call
+st.set_page_config(
+    page_title="Data Cleaning Assistant",
+    page_icon="🧹",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Now it's safe to show UI output
 st.write("🔍 Starting module import checks...")
 
+# Import checks
 try:
     import modules.utils
     st.write("utils.py imported OK")
@@ -25,14 +35,6 @@ try:
 except Exception:
     st.error("data_analyzer.py FAILED")
     st.code(traceback.format_exc())
-
-# Configure page
-st.set_page_config(
-    page_title="Data Cleaning Assistant",
-    page_icon="🧹",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 
 def main():
