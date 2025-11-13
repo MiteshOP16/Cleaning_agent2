@@ -6,6 +6,7 @@ from modules.ai_assistant import AIAssistant
 from datetime import datetime
 
 # Initialize session state
+initialize_session_state()
 
 def main():
     st.title("🤖 AI Data Cleaning Assistant")
@@ -18,20 +19,20 @@ def main():
     df = st.session_state.dataset
     assistant = AIAssistant()
 
-st.markdown("""
-Get expert guidance from your AI assistant. Ask questions about data cleaning methods, statistical concepts, 
-and get personalized recommendations based on your specific dataset and columns.
-""")
+    st.markdown("""
+    Get expert guidance from your AI assistant. Ask questions about data cleaning methods, statistical concepts, 
+    and get personalized recommendations based on your specific dataset and columns.
+    """)
 
-# Initialize AI context
-dataset_info = {
-    'shape': df.shape,
-    'columns': len(df.columns),
-    'missing_summary': df.isnull().sum().to_dict(),
-    'column_types': st.session_state.column_types
-}
-
-assistant.set_context(dataset_info)
+    # Initialize AI context
+    dataset_info = {
+        'shape': df.shape,
+        'columns': len(df.columns),
+        'missing_summary': df.isnull().sum().to_dict(),
+        'column_types': st.session_state.column_types
+    }
+    
+    assistant.set_context(dataset_info)
 
 # Initialize conversation history in session state
 if 'ai_conversation' not in st.session_state:
