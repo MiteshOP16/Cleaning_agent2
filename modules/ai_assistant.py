@@ -12,20 +12,13 @@ class AIAssistant:
     def __init__(self):
         self.groq_api_key = os.getenv("GROQ_API_KEY")
         self.client = None
+        self.model = "llama-3.1-8b-instant"
         self.conversation_history = []
         self.context = {}
-        
-        # Initialize Groq client
-        try:
-            if self.groq_api_key:
-                self.client = Groq(api_key=self.groq_api_key)
-                self.model = "llama-3.1-8b-instant"
-            else:
-                st.warning("⚠️ GROQ_API_KEY not found. AI assistant will not be available.")
-                self.client = None
-        except Exception as e:
-            st.error(f"Error initializing Groq client: {str(e)}")
-            self.client = None
+    
+        if not self.groq_api_key:
+            print("⚠ GROQ_API_KEY not found. AI assistant disabled.")
+
     
     def set_context(self, dataset_info: Dict[str, Any], column_analysis: Optional[Dict[str, Any]] = None):
         """Set the current context for AI assistance"""
