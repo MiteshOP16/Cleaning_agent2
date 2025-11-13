@@ -3,7 +3,6 @@ import pandas as pd
 from modules.utils import initialize_session_state, create_backup, save_cleaning_operation
 from datetime import datetime
 
-initialize_session_state()
 
 def coerce_column_dtype(df: pd.DataFrame, column: str, expected_type: str):
     """
