@@ -192,6 +192,13 @@ def main():
         key="ai_question_input",
         height=100
     )
+    # Apply pending suggested question safely
+    if "pending_question" in st.session_state:
+        st.session_state.ai_question_input = st.session_state.pending_question
+        del st.session_state.pending_question
+        st.rerun()
+
+    
     
     # Send button and options
     send_cols = st.columns([3, 1])
@@ -344,7 +351,7 @@ def main():
         with tab:
             for question in questions:
                 if st.button(f"❓ {question}", key=f"suggest_{category}_{question[:20]}"):
-                    st.session_state.ai_question_input = question
+                    st.session_state["pending_question"]= question
                     st.rerun()
     
     # Export conversation
