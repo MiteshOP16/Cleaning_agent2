@@ -9,7 +9,7 @@ import modules.test_registration
 from modules.test_registration import get_analyzer
 import plotly.graph_objects as go
 
-initialize_session_state()
+
 
 st.title("🔬 Hypothesis Testing & Statistical Analysis")
 
