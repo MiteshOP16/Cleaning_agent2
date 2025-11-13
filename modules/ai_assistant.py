@@ -10,14 +10,32 @@ class AIAssistant:
     """AI-powered conversational assistant for data cleaning guidance"""
     
     def __init__(self):
-        self.groq_api_key = os.getenv("GROQ_API_KEY")
+        # Load key from Streamlit Secrets first
+        try:
+            import streamlit as st
+            if "GROQ_API_KEY" in st.secrets:
+                self.groq_api_key = st.secrets["GROQ_API_KEY"]
+            else:
+                # fallback for local dev
+                self.groq_api_key = os.getenv("GROQ_API_KEY")
+        except Exception:
+            self.groq_api_key = os.getenv("GROQ_API_KEY")
+
         self.client = None
         self.model = "llama-3.1-8b-instant"
         self.conversation_history = []
         self.context = {}
-    
-        if not self.groq_api_key:
-            print("⚠ GROQ_API_KEY not found. AI assistant disabled.")
+
+        # Try to initialize Groq client
+        if self.groq_api_key:
+            try:
+                from groq import Groq
+                self.client = Groq(api_key=self.groq_api_key)
+            except Exception as e:
+                print("❌ Failed to initialize Groq client:", e)
+                self.client = None
+        else:
+            print("❌ GROQ_API_KEY missing — AI disabled.")
 
     
     def set_context(self, dataset_info: Dict[str, Any], column_analysis: Optional[Dict[str, Any]] = None):
