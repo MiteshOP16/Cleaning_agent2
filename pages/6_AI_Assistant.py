@@ -6,7 +6,7 @@ from modules.ai_assistant import AIAssistant
 from datetime import datetime
 
 # Initialize session state
-initialize_session_state()
+
 
 st.title("🤖 AI Data Cleaning Assistant")
 
