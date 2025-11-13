@@ -34,8 +34,12 @@ class AIAssistant:
     def ask_question(self, question: str, column_specific: Optional[str] = None, 
                    current_data_state: Optional[Dict[str, Any]] = None) -> str:
         """Ask the AI assistant a question with current context"""
-        if not self.client:
-            return "AI assistant is not available. Please set your GROQ_API_KEY in the secrets."
+        if self.client is None:
+           try:
+              self.client = Groq(api_key=self.groq_api_key)
+           except Exception as e:
+              return f"AI initialization failed: {str(e)}"
+
         
         try:
             # Update context with current data state if provided
