@@ -1,6 +1,30 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import traceback
+
+st.write("🔍 Starting module import checks...")
+
+try:
+    import modules.utils
+    st.write("utils.py imported OK")
+except Exception:
+    st.error("utils.py FAILED")
+    st.code(traceback.format_exc())
+
+try:
+    import modules.ai_assistant
+    st.write("ai_assistant.py imported OK")
+except Exception:
+    st.error("ai_assistant.py FAILED")
+    st.code(traceback.format_exc())
+
+try:
+    import modules.data_analyzer
+    st.write("data_analyzer.py imported OK")
+except Exception:
+    st.error("data_analyzer.py FAILED")
+    st.code(traceback.format_exc())
 
 # Configure page
 st.set_page_config(
