@@ -38,127 +38,62 @@ def main():
         st.session_state.ai_conversation = []
 
 # AI Assistant Interface
-st.subheader("💬 Conversation")
-
-# Context selection
-context_cols = st.columns([2, 2])
-
-with context_cols[0]:
-    context_mode = st.selectbox(
-        "Conversation context:",
-        options=['general', 'column_specific', 'workflow'],
-        format_func=lambda x: {
-            'general': '🌐 General Data Cleaning',
-            'column_specific': '📊 Specific Column',
-            'workflow': '🔄 Workflow Guidance'
-        }[x]
-    )
-
-with context_cols[1]:
-    if context_mode == 'column_specific':
-        context_column = st.selectbox(
-            "Select column:",
-            options=[''] + list(df.columns),
-            help="Choose a column for context-specific guidance"
+    st.subheader("💬 Conversation")
+    
+    # Context selection
+    context_cols = st.columns([2, 2])
+    
+    with context_cols[0]:
+        context_mode = st.selectbox(
+            "Conversation context:",
+            options=['general', 'column_specific', 'workflow'],
+            format_func=lambda x: {
+                'general': '🌐 General Data Cleaning',
+                'column_specific': '📊 Specific Column',
+                'workflow': '🔄 Workflow Guidance'
+            }[x]
         )
-    else:
-        context_column = None
-
-# Quick action buttons
-st.markdown("### 🚀 Quick Actions")
-
-quick_actions = st.columns(4)
-
-with quick_actions[0]:
-    if st.button("📋 Dataset Overview", width='stretch'):
-        question = "Please provide an overview of my dataset and highlight the main data quality issues I should address first."
-        st.session_state.ai_conversation.append({
-            'type': 'user',
-            'message': question,
-            'timestamp': datetime.now().isoformat(),
-            'context': 'general'
-        })
-        
-        with st.spinner("🤖 Analyzing your dataset..."):
-            response = assistant.get_workflow_guidance(st.session_state.column_analysis)
-            st.session_state.ai_conversation.append({
-                'type': 'assistant',
-                'message': response,
-                'timestamp': datetime.now().isoformat(),
-                'context': 'general'
-            })
-        st.rerun()
-
-with quick_actions[1]:
-    if st.button("🧠 Smart Recommendations", width='stretch'):
-        if context_column and context_column in st.session_state.column_analysis:
-            analysis = st.session_state.column_analysis[context_column]
-            question = f"🧠 Requesting intelligent analysis and specific cleaning recommendations for column '{context_column}'"
-            
+    
+    with context_cols[1]:
+        if context_mode == 'column_specific':
+            context_column = st.selectbox(
+                "Select column:",
+                options=[''] + list(df.columns),
+                help="Choose a column for context-specific guidance"
+            )
+        else:
+            context_column = None
+    
+    # Quick action buttons
+    st.markdown("### 🚀 Quick Actions")
+    
+    quick_actions = st.columns(4)
+    
+    with quick_actions[0]:
+        if st.button("📋 Dataset Overview", width='stretch'):
+            question = "Please provide an overview of my dataset and highlight the main data quality issues I should address first."
             st.session_state.ai_conversation.append({
                 'type': 'user',
                 'message': question,
                 'timestamp': datetime.now().isoformat(),
-                'context': context_column
+                'context': 'general'
             })
             
-            with st.spinner("🤖 Analyzing issues and preparing specific recommendations..."):
-                response = assistant.get_intelligent_cleaning_recommendation(context_column, analysis, df)
+            with st.spinner("🤖 Analyzing your dataset..."):
+                response = assistant.get_workflow_guidance(st.session_state.column_analysis)
                 st.session_state.ai_conversation.append({
                     'type': 'assistant',
                     'message': response,
                     'timestamp': datetime.now().isoformat(),
-                    'context': context_column
+                    'context': 'general'
                 })
             st.rerun()
-        else:
-            st.warning("Please select a column first")
-
-with quick_actions[2]:
-    if st.button("📚 Explain Concept", width='stretch'):
-        # Show concept selection
-        concept = st.selectbox(
-            "Select concept to explain:",
-            options=[
-                'missing_data_patterns',
-                'outlier_detection',
-                'imputation_methods',
-                'data_normalization',
-                'survey_weights',
-                'sampling_bias'
-            ],
-            format_func=lambda x: x.replace('_', ' ').title()
-        )
-        
-        question = f"Please explain {concept.replace('_', ' ')} in the context of survey data cleaning with practical examples."
-        
-        st.session_state.ai_conversation.append({
-            'type': 'user',
-            'message': question,
-            'timestamp': datetime.now().isoformat(),
-            'context': 'educational'
-        })
-        
-        with st.spinner("🤖 Preparing explanation..."):
-            response = assistant.explain_concept(concept.replace('_', ' '), context_column)
-            st.session_state.ai_conversation.append({
-                'type': 'assistant',
-                'message': response,
-                'timestamp': datetime.now().isoformat(),
-                'context': 'educational'
-            })
-        st.rerun()
-
-with quick_actions[3]:
-    if st.button("🔍 Impact Assessment", width='stretch'):
-        if context_column:
-            # Get recent cleaning history for this column
-            column_history = st.session_state.cleaning_history.get(context_column, [])
-            if column_history:
-                last_operation = column_history[-1]
-                method = last_operation.get('method_name', 'unknown method')
-                
-                question = f"Assess the impact of applying {method} to column '{context_column}' on my survey analysis and statistical estimates."
+    
+    with quick_actions[1]:
+        if st.button("🧠 Smart Recommendations", width='stretch'):
+            if context_column and context_column in st.session_state.column_analysis:
+                analysis = st.session_state.column_analysis[context_column]
+                question = f"🧠 Requesting intelligent analysis and specific cleaning recommendations for column '{context_column}'"
                 
                 st.session_state.ai_conversation.append({
                     'type': 'user',
@@ -167,9 +102,8 @@ with quick_actions[3]:
                     'context': context_column
                 })
                 
-                with st.spinner("🤖 Assessing impact..."):
-                    analysis = st.session_state.column_analysis.get(context_column, {})
-                    response = assistant.assess_impact(context_column, method, analysis)
+                with st.spinner("🤖 Analyzing issues and preparing specific recommendations..."):
+                    response = assistant.get_intelligent_cleaning_recommendation(context_column, analysis, df)
                     st.session_state.ai_conversation.append({
                         'type': 'assistant',
                         'message': response,
@@ -178,9 +112,75 @@ with quick_actions[3]:
                     })
                 st.rerun()
             else:
-                st.warning("No cleaning operations found for this column")
-        else:
-            st.warning("Please select a column first")
+                st.warning("Please select a column first")
+    
+    with quick_actions[2]:
+        if st.button("📚 Explain Concept", width='stretch'):
+            # Show concept selection
+            concept = st.selectbox(
+                "Select concept to explain:",
+                options=[
+                    'missing_data_patterns',
+                    'outlier_detection',
+                    'imputation_methods',
+                    'data_normalization',
+                    'survey_weights',
+                    'sampling_bias'
+                ],
+                format_func=lambda x: x.replace('_', ' ').title()
+            )
+            
+            question = f"Please explain {concept.replace('_', ' ')} in the context of survey data cleaning with practical examples."
+            
+            st.session_state.ai_conversation.append({
+                'type': 'user',
+                'message': question,
+                'timestamp': datetime.now().isoformat(),
+                'context': 'educational'
+            })
+            
+            with st.spinner("🤖 Preparing explanation..."):
+                response = assistant.explain_concept(concept.replace('_', ' '), context_column)
+                st.session_state.ai_conversation.append({
+                    'type': 'assistant',
+                    'message': response,
+                    'timestamp': datetime.now().isoformat(),
+                    'context': 'educational'
+                })
+            st.rerun()
+    
+    with quick_actions[3]:
+        if st.button("🔍 Impact Assessment", width='stretch'):
+            if context_column:
+                # Get recent cleaning history for this column
+                column_history = st.session_state.cleaning_history.get(context_column, [])
+                if column_history:
+                    last_operation = column_history[-1]
+                    method = last_operation.get('method_name', 'unknown method')
+                    
+                    question = f"Assess the impact of applying {method} to column '{context_column}' on my survey analysis and statistical estimates."
+                    
+                    st.session_state.ai_conversation.append({
+                        'type': 'user',
+                        'message': question,
+                        'timestamp': datetime.now().isoformat(),
+                        'context': context_column
+                    })
+                    
+                    with st.spinner("🤖 Assessing impact..."):
+                        analysis = st.session_state.column_analysis.get(context_column, {})
+                        response = assistant.assess_impact(context_column, method, analysis)
+                        st.session_state.ai_conversation.append({
+                            'type': 'assistant',
+                            'message': response,
+                            'timestamp': datetime.now().isoformat(),
+                            'context': context_column
+                        })
+                    st.rerun()
+                else:
+                    st.warning("No cleaning operations found for this column")
+            else:
+                st.warning("Please select a column first")
 
 # Chat interface
 st.markdown("### 💬 Ask Your Question")
