@@ -190,13 +190,12 @@ def main():
         "Type your question:",
         placeholder="e.g., 'Should I use median or mean imputation for the age column?' or 'How do I handle missing data that appears to be systematic?'",
         key="ai_question_input",
+        value=st.session_state.get("ai_question_input", ""),
         height=100
     )
     # Apply pending suggested question safely
     if "pending_question" in st.session_state:
-        st.session_state.ai_question_input = st.session_state.pending_question
-        del st.session_state.pending_question
-        st.rerun()
+         st.session_state["ai_question_input"] = st.session_state.pop("pending_question")
 
     
     
