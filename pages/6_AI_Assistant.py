@@ -472,3 +472,7 @@ st.markdown("""
 - Use context modes for focused guidance
 - Request explanations of statistical concepts
 """)
+
+if __name__ == "__main__":
+    main()
+
