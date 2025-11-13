@@ -13,3 +13,17 @@ seaborn>=0.13.2
 streamlit>=1.49.1
 statsmodels==0.14.2
 streamlit
+groq
+jinja2
+matplotlib
+numpy
+openpyxl
+pandas
+pillow
+plotly
+reportlab
+scikit-learn
+scipy
+seaborn
+statsmodels
+streamlit
