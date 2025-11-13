@@ -8,8 +8,7 @@ from modules.data_analyzer import ColumnAnalyzer
 from modules.visualization import DataVisualizer
 from modules.ai_assistant import AIAssistant
 
-# Initialize session state
-initialize_session_state()
+
 
 st.title("🔍 Individual Column Analysis")
 
