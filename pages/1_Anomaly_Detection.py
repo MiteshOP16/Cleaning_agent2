@@ -5,6 +5,82 @@ from datetime import datetime
 
 initialize_session_state()
 
+def coerce_column_dtype(df: pd.DataFrame, column: str, expected_type: str):
+    """
+    Convert column to proper dtype based on expected_type while preserving nulls.
+    
+    Returns:
+        tuple: (modified dataframe, conversion_applied boolean)
+    """
+    try:
+        # Work on a copy of the series to avoid partial mutations
+        original_series = df[column].copy()
+        
+        if expected_type in ['integer', 'float', 'numeric']:
+            # Numeric conversion with errors='coerce' preserves NaN
+            numeric_series = pd.to_numeric(original_series, errors='coerce')
+            
+            # Check if values are integers (safely handling NaN)
+            non_null_values = numeric_series.dropna()
+            is_integer_type = expected_type == 'integer' or (
+                expected_type == 'numeric' and 
+                len(non_null_values) > 0 and 
+                all(float(x).is_integer() for x in non_null_values)
+            )
+            
+            if is_integer_type:
+                df[column] = numeric_series.astype('Int64')  # Nullable integer
+            else:
+                df[column] = numeric_series.astype('Float64')  # Nullable float
+            return df, True
+            
+        elif expected_type == 'datetime':
+            converted = pd.to_datetime(original_series, errors='coerce', utc=False)
+            df[column] = converted
+            return df, True
+            
+        elif expected_type == 'categorical':
+            # Convert to string then categorical, preserving NA
+            str_series = original_series.astype('string')
+            categories = sorted(str_series.dropna().unique())
+            df[column] = str_series.astype(pd.CategoricalDtype(categories=categories, ordered=False))
+            return df, True
+            
+        elif expected_type == 'binary':
+            # Normalize to True/False, preserve nulls, use nullable boolean dtype
+            def normalize_binary(val):
+                if pd.isna(val):
+                    return pd.NA
+                if isinstance(val, bool):
+                    return val
+                if isinstance(val, (int, float)):
+                    return bool(val)
+                if isinstance(val, str):
+                    val_lower = str(val).lower().strip()
+                    if val_lower in ['true', '1', 'yes', 'y', 't']:
+                        return True
+                    elif val_lower in ['false', '0', 'no', 'n', 'f']:
+                        return False
+                return pd.NA
+            
+            converted = original_series.apply(normalize_binary).astype('boolean')
+            df[column] = converted
+            return df, True
+            
+        elif expected_type == 'text':
+            # Use pandas nullable string dtype to preserve NA
+            converted = original_series.astype('string')
+            df[column] = converted
+            return df, True
+            
+        else:
+            # Unknown/unsupported type - skip conversion
+            return df, False
+            
+    except Exception as e:
+        # If conversion fails, return unchanged (don't mutate df)
+        return df, False
+
 st.title("🔍 Data Type Anomaly Detection & Duplicate Removal")
 
 if st.session_state.dataset is None:
@@ -104,21 +180,25 @@ with tab1:
             
             fix_method = st.radio(
                 "Choose how to handle these anomalies:",
-                options=["Remove All Anomalous Rows", "Replace Values Individually"],
-                help="Either remove all rows with anomalies or replace specific values"
+                options=["Set All Anomalous Cells to Null", "Replace Values Individually"],
+                help="Either set all anomalous cell values to null or replace specific values"
             )
             
-            if fix_method == "Remove All Anomalous Rows":
-                st.warning(f"⚠️ This will remove **{anomaly_data['anomaly_count']} rows** from your dataset.")
+            if fix_method == "Set All Anomalous Cells to Null":
+                st.warning(f"⚠️ This will set **{anomaly_data['anomaly_count']} cell values** to null (NaN) in column '{selected_column}'. The rows will remain in the dataset.")
                 
                 col_confirm, col_cancel = st.columns(2)
                 
                 with col_confirm:
-                    if st.button("🗑️ Confirm: Remove All Anomalous Rows", type="primary", use_container_width=True):
+                    if st.button("🗑️ Confirm: Set Anomalous Cells to Null", type="primary", use_container_width=True):
                         create_backup()
                         
                         anomaly_indices = [a['row_index'] for a in anomaly_data['anomalies']]
                         cleaned_df, summary = detector.remove_anomalies(df, selected_column, anomaly_indices)
+                        
+                        # Apply column type conversion after fixing anomalies (setting to null)
+                        expected_type = column_types.get(selected_column, 'unknown')
+                        cleaned_df, conversion_applied = coerce_column_dtype(cleaned_df, selected_column, expected_type)
                         
                         st.session_state.dataset = cleaned_df
                         
@@ -126,12 +206,15 @@ with tab1:
                             'column': selected_column,
                             'operation': 'remove_anomalies',
                             'details': summary,
-                            'rows_affected': summary['rows_removed']
+                            'rows_affected': summary.get('cells_nullified', 0)
                         })
                         
                         del st.session_state.anomaly_results[selected_column]
                         
-                        st.success(f"✅ Successfully removed {summary['rows_removed']} rows with anomalies!")
+                        if conversion_applied:
+                            st.success(f"✅ Successfully set {summary.get('cells_nullified', 0)} cell values to null and converted column type to {expected_type}!")
+                        else:
+                            st.success(f"✅ Successfully set {summary.get('cells_nullified', 0)} cell values to null!")
                         st.rerun()
                 
                 with col_cancel:
@@ -167,6 +250,10 @@ with tab1:
                                         new_value
                                     )
                                     
+                                    # Apply column type conversion after fixing anomalies
+                                    expected_type = column_types.get(selected_column, 'unknown')
+                                    modified_df, conversion_applied = coerce_column_dtype(modified_df, selected_column, expected_type)
+                                    
                                     st.session_state.dataset = modified_df
                                     
                                     save_cleaning_operation({
@@ -177,7 +264,10 @@ with tab1:
                                     
                                     del st.session_state.anomaly_results[selected_column]
                                     
-                                    st.success(f"✅ Replaced value at row {anomaly['row_index']}")
+                                    if conversion_applied:
+                                        st.success(f"✅ Replaced value at row {anomaly['row_index']} and converted column type to {expected_type}")
+                                    else:
+                                        st.success(f"✅ Replaced value at row {anomaly['row_index']}")
                                     st.rerun()
                                 else:
                                     st.warning("Please enter a replacement value")
@@ -205,6 +295,10 @@ with tab1:
                         replacements
                     )
                     
+                    # Apply column type conversion after fixing anomalies
+                    expected_type = column_types.get(selected_column, 'unknown')
+                    modified_df, conversion_applied = coerce_column_dtype(modified_df, selected_column, expected_type)
+                    
                     st.session_state.dataset = modified_df
                     
                     save_cleaning_operation({
@@ -215,7 +309,10 @@ with tab1:
                     
                     del st.session_state.anomaly_results[selected_column]
                     
-                    st.success(f"✅ Replaced {summary['replacements_count']} anomalies!")
+                    if conversion_applied:
+                        st.success(f"✅ Replaced {summary['replacements_count']} anomalies and converted column type to {expected_type}!")
+                    else:
+                        st.success(f"✅ Replaced {summary['replacements_count']} anomalies!")
                     st.rerun()
     
     st.divider()

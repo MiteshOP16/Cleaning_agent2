@@ -197,13 +197,18 @@ if selected_columns:
             elif viz_type == 'kde':
                 from scipy import stats
                 fig = go.Figure()
-                for col in selected_columns:
+                colors = ['#636efa', '#EF553B', '#00cc96', '#ab63fa', '#FFA15A']
+                for idx, col in enumerate(selected_columns):
                     if pd.api.types.is_numeric_dtype(df[col]):
                         data = df[col].dropna()
                         if len(data) > 1:
-                            # Calculate KDE
-                            kde = stats.gaussian_kde(data)
-                            x_range = np.linspace(data.min(), data.max(), 200)
+                            # Calculate KDE with Scott's bandwidth (default, good for most cases)
+                            kde = stats.gaussian_kde(data, bw_method='scott')
+                            
+                            # Extend range beyond data for better visualization
+                            data_range = data.max() - data.min()
+                            x_range = np.linspace(data.min() - 0.1 * data_range, 
+                                                data.max() + 0.1 * data_range, 300)
                             y_kde = kde(x_range)
                             
                             fig.add_trace(go.Scatter(
@@ -212,14 +217,17 @@ if selected_columns:
                                 name=col,
                                 mode='lines',
                                 fill='tozeroy',
-                                opacity=0.6
+                                opacity=0.6,
+                                line=dict(color=colors[idx % len(colors)], width=2)
                             ))
                 if fig.data:
                     fig.update_layout(
                         title=chart_title, 
                         xaxis_title="Value", 
                         yaxis_title="Density",
-                        showlegend=show_legend
+                        showlegend=show_legend,
+                        template='plotly_white',
+                        hovermode='x unified'
                     )
                 else:
                     error_message = "No numeric columns with sufficient data for KDE plot."
@@ -232,37 +240,70 @@ if selected_columns:
                     if pd.api.types.is_numeric_dtype(df[col]):
                         data = df[col].dropna()
                         if len(data) > 1:
-                            # Calculate Q-Q plot points
+                            # Calculate Q-Q plot points using scipy.stats.probplot
                             qq_data = stats.probplot(data, dist="norm")
                             theoretical_quantiles = qq_data[0][0]
                             sample_quantiles = qq_data[0][1]
+                            slope = qq_data[1][0]
+                            intercept = qq_data[1][1]
                             
-                            # Create scatter plot
+                            # Create figure
                             fig = go.Figure()
+                            
+                            # Add data points
                             fig.add_trace(go.Scatter(
                                 x=theoretical_quantiles,
                                 y=sample_quantiles,
                                 mode='markers',
-                                name='Data Points',
-                                marker=dict(color='blue', size=6)
+                                name='Sample Data',
+                                marker=dict(
+                                    color='#19d3f3',
+                                    size=6,
+                                    opacity=0.7,
+                                    line=dict(width=0.5, color='DarkSlateGrey')
+                                )
                             ))
                             
-                            # Add reference line
-                            min_val = min(theoretical_quantiles.min(), sample_quantiles.min())
-                            max_val = max(theoretical_quantiles.max(), sample_quantiles.max())
+                            # Add fitted reference line (best fit)
+                            x_line = np.array([theoretical_quantiles[0], theoretical_quantiles[-1]])
+                            y_line = slope * x_line + intercept
                             fig.add_trace(go.Scatter(
-                                x=[min_val, max_val],
-                                y=[min_val, max_val],
+                                x=x_line,
+                                y=y_line,
                                 mode='lines',
-                                name='Normal Distribution',
-                                line=dict(color='red', dash='dash')
+                                name='Best Fit Line',
+                                line=dict(color='#636efa', width=2)
+                            ))
+                            
+                            # Add 45-degree line for perfect normal distribution
+                            fig.add_trace(go.Scatter(
+                                x=x_line,
+                                y=x_line,
+                                mode='lines',
+                                name='Perfect Normal',
+                                line=dict(color='red', width=1, dash='dash'),
+                                opacity=0.5
                             ))
                             
                             fig.update_layout(
                                 title=chart_title,
-                                xaxis_title="Theoretical Quantiles",
+                                xaxis_title="Theoretical Quantiles (Normal Distribution)",
                                 yaxis_title="Sample Quantiles",
-                                showlegend=show_legend
+                                showlegend=show_legend,
+                                template='plotly_white',
+                                hovermode='closest'
+                            )
+                            
+                            # Add annotation explaining the plot
+                            fig.add_annotation(
+                                text="Points close to the line suggest normal distribution",
+                                xref="paper", yref="paper",
+                                x=0.02, y=0.98,
+                                showarrow=False,
+                                bgcolor="rgba(255, 255, 255, 0.8)",
+                                bordercolor="gray",
+                                borderwidth=1,
+                                font=dict(size=10)
                             )
                         else:
                             error_message = "Insufficient data for Q-Q plot."

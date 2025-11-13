@@ -216,24 +216,29 @@ class AnomalyDetector:
     def remove_anomalies(self, df: pd.DataFrame, column: str, 
                         anomaly_indices: List[int]) -> Tuple[pd.DataFrame, Dict[str, Any]]:
         """
-        Remove rows containing anomalies
+        Remove anomalous cell values by setting them to null/NaN
         
         Args:
             df: DataFrame to clean
             column: Column name
-            anomaly_indices: List of row indices to remove
+            anomaly_indices: List of row indices where cell values should be set to null
         
         Returns:
             Tuple of (cleaned DataFrame, operation summary)
         """
-        original_rows = len(df)
-        cleaned_df = df.drop(index=anomaly_indices)
+        import numpy as np
+        
+        cleaned_df = df.copy()
+        
+        # Set anomalous cell values to NaN instead of removing entire rows
+        for idx in anomaly_indices:
+            cleaned_df.at[idx, column] = np.nan
         
         summary = {
             'operation': 'remove_anomalies',
             'column': column,
-            'rows_removed': len(anomaly_indices),
-            'original_rows': original_rows,
+            'cells_nullified': len(anomaly_indices),
+            'original_rows': len(df),
             'remaining_rows': len(cleaned_df),
             'timestamp': datetime.now().isoformat()
         }

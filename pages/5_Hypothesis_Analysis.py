@@ -190,6 +190,49 @@ if 'selected_test_id' in st.session_state and st.session_state.selected_test_id:
             )
             analyzer.set_alpha(alpha)
         
+        with col_sig2:
+            use_sample = st.checkbox(
+                "Use sample of data",
+                value=False,
+                help="Test on a subset of the data instead of the full dataset"
+            )
+        
+        # Sample size configuration
+        if use_sample:
+            sample_col1, sample_col2 = st.columns(2)
+            with sample_col1:
+                auto_sample = st.checkbox(
+                    "Auto-calculate sample size",
+                    value=True,
+                    help="Automatically determine optimal sample size based on dataset"
+                )
+            
+            with sample_col2:
+                if auto_sample:
+                    # Use 10% or max 1000 rows as automatic sample size
+                    auto_size = min(1000, max(100, int(len(df) * 0.1)))
+                    st.info(f"Auto sample size: {auto_size} rows")
+                    sample_size = auto_size
+                else:
+                    sample_size = st.number_input(
+                        "Sample size:",
+                        min_value=50,
+                        max_value=len(df),
+                        value=min(500, len(df)),
+                        step=50,
+                        help="Number of rows to use for the test"
+                    )
+            
+            # Create sampled dataframe
+            if sample_size < len(df):
+                df = df.sample(n=sample_size, random_state=42)
+                st.info(f"✓ Using {sample_size} rows for hypothesis test")
+        
+        # Refresh column lists after any potential type conversions
+        numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+        categorical_cols = df.select_dtypes(include=['object', 'category', 'bool']).columns.tolist()
+        all_cols = df.columns.tolist()
+        
         test_params = {}
         reqs = selected_test.input_requirements
         
@@ -297,7 +340,12 @@ if st.session_state.hypothesis_results:
             
             with col3:
                 decision_color = "🟢" if "Reject" in result.get('decision', '') or "Significant" in result.get('decision', '') or "differ" in result.get('decision', '') else "🔴"
-                st.metric("Decision", f"{decision_color} {result['decision']}")
+                st.markdown(f"""
+                <div style='text-align: left;'>
+                    <p style='color: gray; font-size: 0.8rem; margin: 0;'>Decision</p>
+                    <p style='font-size: 0.95rem; margin: 5px 0; line-height: 1.3;'>{decision_color} {result['decision']}</p>
+                </div>
+                """, unsafe_allow_html=True)
             
             if result.get('effect_size'):
                 st.markdown(f"**Effect Size:** {result['effect_size']['type']} = {result['effect_size']['value']:.4f}" if isinstance(result['effect_size']['value'], (int, float)) else f"**Effect Size:** {result['effect_size']['type']} = {result['effect_size']['value']}")
