@@ -7,16 +7,16 @@ from datetime import datetime
 
 # Initialize session state
 
-
-st.title("🤖 AI Data Cleaning Assistant")
-
-# Check if dataset is loaded
-if st.session_state.dataset is None:
-    st.warning("⚠️ No dataset loaded. Please upload a dataset on the Home page first.")
-    st.stop()
-
-df = st.session_state.dataset
-assistant = AIAssistant()
+def main():
+    st.title("🤖 AI Data Cleaning Assistant")
+    
+    # Check if dataset is loaded
+    if st.session_state.dataset is None:
+        st.warning("⚠️ No dataset loaded. Please upload a dataset on the Home page first.")
+        st.stop()
+    
+    df = st.session_state.dataset
+    assistant = AIAssistant()
 
 st.markdown("""
 Get expert guidance from your AI assistant. Ask questions about data cleaning methods, statistical concepts, 
