@@ -9,7 +9,7 @@ import base64
 from datetime import datetime
 
 # Initialize session state
-initialize_session_state()
+
 
 st.title("📊 Comprehensive Report Generation")
 
