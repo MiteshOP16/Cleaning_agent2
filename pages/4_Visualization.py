@@ -8,7 +8,7 @@ from modules.visualization import DataVisualizer
 import io
 import base64
 
-initialize_session_state()
+
 
 st.title("📊 Interactive Data Visualization")
 
