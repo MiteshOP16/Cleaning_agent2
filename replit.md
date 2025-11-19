@@ -40,3 +40,8 @@ The core structure includes:
 - **Enhanced Duplicate Removal**: New tab in Anomaly Detection page with clear UI showing duplicate rows are removed based on complete row matching (all columns or selected subset)
 - **Improved Navigation**: Page references updated to reflect new structure (Home instead of Data Upload)
 - **Replit Environment Setup (Nov 19, 2025)**: Successfully configured for Replit with Python 3.11.13, all dependencies installed, Streamlit configured for port 5000 with webview output, and autoscale deployment ready
+- **UX Improvements (Nov 19, 2025)**:
+    - Verified outlier detection works correctly for both integer and continuous numeric types using `pd.api.types.is_numeric_dtype()`
+    - Streamlined reports page by removing redundant anomaly detection results section
+    - Enhanced cleaning wizard sidebar to sort columns by quality score (ascending) with percentage display for better prioritization
+    - Added intelligent column filtering in hypothesis testing to show only applicable columns based on test requirements (numeric: ≥5 valid values, ≥2 unique; categorical: ≥5 valid, 2-20 unique categories) with helpful tooltips and warnings
