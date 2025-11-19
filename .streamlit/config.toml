@@ -1,5 +1,11 @@
 [server]
-port = 8501
+headless = true
+port = 5000
 enableCORS = false
 enableXsrfProtection = false
 address = "0.0.0.0"
+
+[browser]
+gatherUsageStats = false
+serverAddress = "0.0.0.0"
+serverPort = 5000
