@@ -39,3 +39,4 @@ The core structure includes:
 - **Added Excel Support**: Installed openpyxl for full Excel file (.xlsx, .xls) upload compatibility
 - **Enhanced Duplicate Removal**: New tab in Anomaly Detection page with clear UI showing duplicate rows are removed based on complete row matching (all columns or selected subset)
 - **Improved Navigation**: Page references updated to reflect new structure (Home instead of Data Upload)
+- **Replit Environment Setup (Nov 19, 2025)**: Successfully configured for Replit with Python 3.11.13, all dependencies installed, Streamlit configured for port 5000 with webview output, and autoscale deployment ready
