@@ -229,12 +229,55 @@ if 'selected_test_id' in st.session_state and st.session_state.selected_test_id:
                 st.info(f"✓ Using {sample_size} rows for hypothesis test")
         
         # Refresh column lists after any potential type conversions
-        numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
-        categorical_cols = df.select_dtypes(include=['object', 'category', 'bool']).columns.tolist()
+        all_numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+        all_categorical_cols = df.select_dtypes(include=['object', 'category', 'bool']).columns.tolist()
         all_cols = df.columns.tolist()
         
-        test_params = {}
+        # Filter columns based on test requirements and data quality
+        def filter_applicable_columns(cols, col_type='numeric'):
+            """Filter columns that are applicable for the selected test"""
+            applicable = []
+            for col in cols:
+                # Basic validation
+                non_null_count = df[col].notna().sum()
+                
+                # Skip columns with too few valid values
+                if non_null_count < 5:
+                    continue
+                
+                if col_type == 'numeric':
+                    # For numeric columns, check if there's enough variation
+                    if df[col].nunique() >= 2:  # Need at least 2 unique values
+                        applicable.append(col)
+                elif col_type == 'categorical':
+                    # For categorical columns, check uniqueness
+                    unique_count = df[col].nunique()
+                    # Need at least 2 categories but not too many (max 50% unique or 20 categories)
+                    if 2 <= unique_count <= min(20, len(df) * 0.5):
+                        applicable.append(col)
+            
+            return applicable
+        
+        # Apply filtering based on test requirements
         reqs = selected_test.input_requirements
+        
+        if reqs.get('numeric_cols', 0) > 0:
+            numeric_cols = filter_applicable_columns(all_numeric_cols, 'numeric')
+            if not numeric_cols:
+                st.warning("⚠️ No applicable numeric columns found for this test. Columns need at least 5 non-null values and 2 unique values.")
+                numeric_cols = ['No applicable numeric columns']
+        else:
+            numeric_cols = all_numeric_cols
+        
+        if reqs.get('categorical_cols', 0) > 0:
+            categorical_cols = filter_applicable_columns(all_categorical_cols, 'categorical')
+            if not categorical_cols:
+                st.warning("⚠️ No applicable categorical columns found for this test. Columns need at least 5 non-null values and 2-20 unique categories.")
+                categorical_cols = ['No applicable categorical columns']
+        else:
+            categorical_cols = all_categorical_cols
+        
+        test_params = {}
         
         if reqs.get('manual_input'):
             st.markdown("**Manual Input Required:**")
@@ -252,43 +295,43 @@ if 'selected_test_id' in st.session_state and st.session_state.selected_test_id:
                 if reqs.get('categorical_cols') == 1:
                     param_col1, param_col2 = st.columns(2)
                     with param_col1:
-                        numeric_col = st.selectbox("Numeric variable:", options=numeric_cols if numeric_cols else ['No numeric columns'])
+                        numeric_col = st.selectbox("Numeric variable:", options=numeric_cols, help="Only showing columns with sufficient data for this test")
                     with param_col2:
-                        group_col = st.selectbox("Grouping variable:", options=categorical_cols if categorical_cols else ['No categorical columns'])
+                        group_col = st.selectbox("Grouping variable:", options=categorical_cols, help="Only showing columns with 2-20 unique categories")
                     test_params = {'numeric_col': numeric_col, 'group_col': group_col}
                 
                 elif reqs.get('test_value'):
                     param_col1, param_col2 = st.columns(2)
                     with param_col1:
-                        column = st.selectbox("Numeric variable:", options=numeric_cols if numeric_cols else ['No numeric columns'])
+                        column = st.selectbox("Numeric variable:", options=numeric_cols, help="Only showing columns with sufficient data for this test")
                     with param_col2:
                         test_value = st.number_input("Test value (H0: μ =):", value=0.0, format="%.4f")
                     test_params = {'column': column, 'test_value': test_value}
                 
                 else:
-                    column = st.selectbox("Select column:", options=numeric_cols if numeric_cols else ['No numeric columns'])
+                    column = st.selectbox("Select column:", options=numeric_cols, help="Only showing columns with sufficient data for this test")
                     test_params = {'column': column}
             
             elif reqs.get('numeric_cols') == 2:
                 param_col1, param_col2 = st.columns(2)
                 with param_col1:
-                    col1 = st.selectbox("First variable:", options=numeric_cols if numeric_cols else ['No numeric columns'])
+                    col1 = st.selectbox("First variable:", options=numeric_cols, help="Only showing columns with sufficient data for this test")
                 with param_col2:
-                    col2_opts = [c for c in numeric_cols if c != col1] if numeric_cols else ['No numeric columns']
-                    col2 = st.selectbox("Second variable:", options=col2_opts)
+                    col2_opts = [c for c in numeric_cols if c != col1] if (numeric_cols and 'No applicable' not in numeric_cols[0]) else ['No applicable numeric columns']
+                    col2 = st.selectbox("Second variable:", options=col2_opts, help="Only showing columns with sufficient data for this test")
                 test_params = {'col1': col1, 'col2': col2}
             
             elif reqs.get('categorical_cols') == 2:
                 param_col1, param_col2 = st.columns(2)
                 with param_col1:
-                    col1 = st.selectbox("First categorical variable:", options=categorical_cols if categorical_cols else ['No categorical columns'])
+                    col1 = st.selectbox("First categorical variable:", options=categorical_cols, help="Only showing columns with 2-20 unique categories")
                 with param_col2:
-                    col2_opts = [c for c in categorical_cols if c != col1] if categorical_cols else ['No categorical columns']
-                    col2 = st.selectbox("Second categorical variable:", options=col2_opts)
+                    col2_opts = [c for c in categorical_cols if c != col1] if (categorical_cols and 'No applicable' not in categorical_cols[0]) else ['No applicable categorical columns']
+                    col2 = st.selectbox("Second categorical variable:", options=col2_opts, help="Only showing columns with 2-20 unique categories")
                 test_params = {'col1': col1, 'col2': col2}
             
             elif reqs.get('categorical_cols') == 1:
-                column = st.selectbox("Categorical variable:", options=categorical_cols if categorical_cols else ['No categorical columns'])
+                column = st.selectbox("Categorical variable:", options=categorical_cols, help="Only showing columns with 2-20 unique categories")
                 if reqs.get('test_proportion'):
                     param_col1, param_col2 = st.columns(2)
                     with param_col1:

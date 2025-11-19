@@ -441,39 +441,9 @@ if st.session_state.get('generated_reports'):
         st.info("No custom visualizations saved. Visit the Visualization page to create and save charts.")
     
     st.divider()
-    
-    st.subheader("6. Anomaly Detection Results")
-    
-    anomaly_results = st.session_state.get('anomaly_results', {})
-    
-    if anomaly_results:
-        total_anomalies = sum(
-            result.get('count', result.get('missing_count', 0)) 
-            for result in anomaly_results.values()
-        )
-        
-        st.success(f"✅ Anomaly detection results included ({len(anomaly_results)} columns with anomalies)")
-        
-        anomaly_summary_data = []
-        for col, result in anomaly_results.items():
-            anomaly_summary_data.append({
-                'Column': col,
-                'Type': result['type'].replace('_', ' ').title(),
-                'Anomaly Count': result.get('count', result.get('missing_count', 0)),
-                'Severity': result.get('severity', 'N/A').title() if result.get('severity') else 'N/A'
-            })
-        
-        anomaly_summary_df = pd.DataFrame(anomaly_summary_data)
-        st.dataframe(anomaly_summary_df, use_container_width=True, hide_index=True)
-        
-        st.metric("Total Anomalies Detected", total_anomalies)
-    else:
-        st.info("No anomaly detection results. Visit the Anomaly Detection page to run analysis.")
-
-st.divider()
 
 # Cleaning summary
-st.subheader("7. Cleaning Operations Summary")
+st.subheader("6. Cleaning Operations Summary")
 
 if st.session_state.cleaning_history:
     # Operations by column

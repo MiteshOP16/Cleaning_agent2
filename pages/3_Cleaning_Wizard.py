@@ -535,24 +535,44 @@ with st.sidebar:
     # Column quality overview
     st.markdown("### 📊 Column Quality")
     
-    for col in df.columns[:10]:  # Show first 10 columns
-        # Get quality score if analysis exists
+    # Collect columns with quality scores
+    columns_with_quality = []
+    columns_without_quality = []
+    
+    for col in df.columns:
         col_analysis = st.session_state.column_analysis.get(col, {})
         if col_analysis:
             quality_score = col_analysis.get('data_quality', {}).get('score', 0)
-            quality_color = "green" if quality_score >= 80 else "orange" if quality_score >= 60 else "red"
-            
-            cleaned_indicator = "🧹" if col in st.session_state.cleaning_history else "⏳"
-            
-            st.markdown(f"""
-            **{col[:15]}{'...' if len(col) > 15 else ''}** {cleaned_indicator}  
-            <span style="color: {quality_color}">Quality: {quality_score}/100</span>
-            """, unsafe_allow_html=True)
+            columns_with_quality.append((col, quality_score))
         else:
-            st.write(f"**{col[:15]}{'...' if len(col) > 15 else ''}** ❓ Not analyzed")
+            columns_without_quality.append(col)
     
-    if len(df.columns) > 10:
-        st.caption(f"... and {len(df.columns) - 10} more columns")
+    # Sort columns by quality score (ascending order - worst first)
+    columns_with_quality.sort(key=lambda x: x[1])
+    
+    # Display sorted columns (first 10)
+    display_count = 0
+    max_display = 10
+    
+    for col, quality_score in columns_with_quality[:max_display]:
+        quality_color = "green" if quality_score >= 80 else "orange" if quality_score >= 60 else "red"
+        cleaned_indicator = "🧹" if col in st.session_state.cleaning_history else "⏳"
+        
+        st.markdown(f"""
+        **{col[:15]}{'...' if len(col) > 15 else ''}** {cleaned_indicator}  
+        <span style="color: {quality_color}">{quality_score}% Quality</span>
+        """, unsafe_allow_html=True)
+        display_count += 1
+    
+    # Show unanalyzed columns if space remains
+    remaining_slots = max_display - display_count
+    for col in columns_without_quality[:remaining_slots]:
+        st.write(f"**{col[:15]}{'...' if len(col) > 15 else ''}** ❓ Not analyzed")
+        display_count += 1
+    
+    total_remaining = len(columns_with_quality) + len(columns_without_quality) - display_count
+    if total_remaining > 0:
+        st.caption(f"... and {total_remaining} more columns")
     
     # Quick actions
     st.markdown("### ⚡ Quick Actions")
