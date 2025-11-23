@@ -46,17 +46,14 @@ class DataBalancer:
             'Advanced': ['GAN Oversampling', 'VAE Oversampling', 'Cost-Sensitive Learning']
         }
     
-    def validate_data(self, df: pd.DataFrame, feature_cols: List[str], target_col: str, cleaning_history: Dict = None) -> Dict[str, Any]:
-        """Validate data before balancing"""
+    def validate_data(self, df: pd.DataFrame, feature_cols: List[str], target_col: str) -> Dict[str, Any]:
+        """Validate data quality before balancing"""
         errors = []
         warnings = []
         
         if df is None or df.empty:
             errors.append("Dataset is empty or not loaded")
             return {'valid': False, 'errors': errors, 'warnings': warnings}
-        
-        if cleaning_history is None or len(cleaning_history) == 0:
-            errors.append("Data has not been cleaned. Please use the Cleaning Wizard to clean your data before balancing.")
         
         if not feature_cols:
             errors.append("No feature columns selected")

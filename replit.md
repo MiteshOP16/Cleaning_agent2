@@ -24,7 +24,7 @@ The core structure includes:
     - **Data Type Anomaly Detection**: Dedicated page for type mismatch detection, clear display of anomalous values, and flexible correction options.
     - **Duplicate Removal**: Complete row duplicate detection and removal with configurable options (check all columns or specific columns, keep first/last/none).
     - **Hypothesis Testing**: Comprehensive statistical testing with 15 test types, intelligent recommendations based on data characteristics, and detailed output with interpretations.
-    - **Data Balancer**: Machine learning dataset balancing with 14 methods across 3 categories (Oversampling: Random Oversampling, SMOTE; Undersampling: Random Undersampling, Tomek Links, NearMiss-1/2/3, ENN, CNN, OSS, Cluster Centroids, NCR; Hybrid: SMOTE + Tomek Links, SMOTE + ENN), before/after class distribution visualization, CSV/Excel download, and validation to ensure data is cleaned before balancing.
+    - **Data Balancer**: Machine learning dataset balancing with 14 methods across 3 categories (Oversampling: Random Oversampling, SMOTE; Undersampling: Random Undersampling, Tomek Links, NearMiss-1/2/3, ENN, CNN, OSS, Cluster Centroids, NCR; Hybrid: SMOTE + Tomek Links, SMOTE + ENN), before/after class distribution visualization, CSV/Excel download, and validation to ensure data quality (no missing values, numeric features, valid target classes).
     - **Performance Optimizations**: Implemented deterministic caching, vectorized operations, optimized imputation and outlier detection, and memory optimizations for large datasets.
 
 ## External Dependencies
@@ -36,7 +36,7 @@ The core structure includes:
 - **Reporting**: Jinja2, ReportLab
 
 ## Recent Updates (Nov 2025)
-- **Data Balancer Feature (Nov 23, 2025)**: Added comprehensive data balancing section after Hypothesis Analysis with 14 balancing methods, feature/target column selection, before/after class distribution visualization, CSV/Excel download with warnings, and validation to block usage on uncleaned data. Advanced methods (GAN, VAE, Cost-Sensitive Learning) shown with "not yet implemented" status.
+- **Data Balancer Feature (Nov 23, 2025)**: Added comprehensive data balancing section after Hypothesis Analysis with 14 balancing methods, feature/target column selection, before/after class distribution visualization, CSV/Excel download with warnings, and data quality validation (checks for missing values, numeric features, valid target classes). Works with both cleaned datasets from Cleaning Wizard or pre-cleaned uploaded datasets. Advanced methods (GAN, VAE, Cost-Sensitive Learning) shown with "not yet implemented" status.
 - **Merged Data Upload with Home Page**: Data upload and configuration functionality integrated into the main home page (app.py) for streamlined user experience
 - **Added Excel Support**: Installed openpyxl for full Excel file (.xlsx, .xls) upload compatibility
 - **Enhanced Duplicate Removal**: New tab in Anomaly Detection page with clear UI showing duplicate rows are removed based on complete row matching (all columns or selected subset)

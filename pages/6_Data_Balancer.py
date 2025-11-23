@@ -186,7 +186,7 @@ with col_apply1:
     if st.button("⚖️ Apply Balancing", type="primary", use_container_width=True, 
                  disabled=not (feature_cols and target_col and target_col != '' and 'selected_method' in st.session_state)):
         
-        validation = balancer.validate_data(df, feature_cols, target_col, st.session_state.cleaning_history)
+        validation = balancer.validate_data(df, feature_cols, target_col)
         
         if not validation['valid']:
             st.error("❌ **Data Validation Failed:**")
