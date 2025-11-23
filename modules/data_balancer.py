@@ -46,7 +46,7 @@ class DataBalancer:
             'Advanced': ['GAN Oversampling', 'VAE Oversampling', 'Cost-Sensitive Learning']
         }
     
-    def validate_data(self, df: pd.DataFrame, feature_cols: List[str], target_col: str) -> Dict[str, Any]:
+    def validate_data(self, df: pd.DataFrame, feature_cols: List[str], target_col: str, cleaning_history: Dict = None) -> Dict[str, Any]:
         """Validate data before balancing"""
         errors = []
         warnings = []
@@ -54,6 +54,9 @@ class DataBalancer:
         if df is None or df.empty:
             errors.append("Dataset is empty or not loaded")
             return {'valid': False, 'errors': errors, 'warnings': warnings}
+        
+        if cleaning_history is None or len(cleaning_history) == 0:
+            errors.append("Data has not been cleaned. Please use the Cleaning Wizard to clean your data before balancing.")
         
         if not feature_cols:
             errors.append("No feature columns selected")
@@ -70,7 +73,7 @@ class DataBalancer:
         
         if target_col and target_col in df.columns:
             if df[target_col].isnull().any():
-                errors.append(f"Target column '{target_col}' contains missing values. Please clean data first.")
+                errors.append(f"Target column '{target_col}' contains missing values. Please clean this column using the Cleaning Wizard first.")
             
             unique_vals = df[target_col].nunique()
             if unique_vals < 2:
@@ -78,13 +81,17 @@ class DataBalancer:
             elif unique_vals > 10:
                 warnings.append(f"Target column has {unique_vals} classes. Balancing works best with fewer classes.")
         
+        categorical_features = []
         for col in feature_cols:
             if col in df.columns:
                 if df[col].isnull().any():
-                    errors.append(f"Feature column '{col}' contains missing values. Please clean data first.")
+                    errors.append(f"Feature column '{col}' contains missing values. Please clean this column using the Cleaning Wizard first.")
                 
                 if not pd.api.types.is_numeric_dtype(df[col]):
-                    errors.append(f"Feature column '{col}' is not numeric. All features must be numeric.")
+                    categorical_features.append(col)
+        
+        if categorical_features:
+            errors.append(f"Feature columns {categorical_features} are not numeric. Balancing requires numeric features. Please encode categorical variables using the Column Analysis page before balancing, or select only numeric columns.")
         
         if len(df) < 10:
             errors.append("Dataset has fewer than 10 rows. Need more data for balancing.")
