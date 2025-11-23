@@ -10,7 +10,7 @@ None configured yet.
 The application is built using **Streamlit** (Python web framework) and leverages **Pandas** and **NumPy** for data processing. For analysis, it uses **Scikit-learn** and **SciPy**, while **Plotly**, **Seaborn**, and **Matplotlib** handle visualization. AI assistance is integrated via the **Groq API** (llama-3.1-8b-instant model). Reporting is managed with **Jinja2** templates and **ReportLab** for PDF generation.
 
 The core structure includes:
-- **Streamlit Pages**: Home page with integrated data upload, then dedicated pages for Anomaly Detection & Duplicate Removal, Column Analysis, Cleaning Wizard, Visualization, Hypothesis Analysis, AI Assistant, and Reports.
+- **Streamlit Pages**: Home page with integrated data upload, then dedicated pages for Anomaly Detection & Duplicate Removal, Column Analysis, Cleaning Wizard, Visualization, Hypothesis Analysis, Data Balancer, AI Assistant, and Reports.
 - **Modular Design**: Functionality is organized into `modules/` for AI integration, anomaly detection, cleaning engine, data analysis, hypothesis testing, report generation, survey weights, and utility functions.
 - **UI/UX Decisions**: Features include interactive visualization builders with multi-column selection and 9 chart types, enhanced distribution analysis with statistical explanations and visual interpretations, and multi-method statistical outlier detection.
 - **Reporting**: Professional PDF reports with modern styling, color palettes, improved table styling, enhanced typography, and color-coded messages are generated using ReportLab, alongside Markdown, HTML, and JSON export options. Reports include executive summaries, anomaly detection results, column analysis summaries, embedded high-resolution visualizations, and a cleaning operations audit trail.
@@ -24,17 +24,19 @@ The core structure includes:
     - **Data Type Anomaly Detection**: Dedicated page for type mismatch detection, clear display of anomalous values, and flexible correction options.
     - **Duplicate Removal**: Complete row duplicate detection and removal with configurable options (check all columns or specific columns, keep first/last/none).
     - **Hypothesis Testing**: Comprehensive statistical testing with 15 test types, intelligent recommendations based on data characteristics, and detailed output with interpretations.
+    - **Data Balancer**: Machine learning dataset balancing with 14 methods across 3 categories (Oversampling: Random Oversampling, SMOTE; Undersampling: Random Undersampling, Tomek Links, NearMiss-1/2/3, ENN, CNN, OSS, Cluster Centroids, NCR; Hybrid: SMOTE + Tomek Links, SMOTE + ENN), before/after class distribution visualization, CSV/Excel download, and validation to ensure data is cleaned before balancing.
     - **Performance Optimizations**: Implemented deterministic caching, vectorized operations, optimized imputation and outlier detection, and memory optimizations for large datasets.
 
 ## External Dependencies
 - **Framework**: Streamlit
 - **Data Processing**: Pandas, NumPy, openpyxl (for Excel support)
-- **Analysis**: Scikit-learn, SciPy
+- **Analysis**: Scikit-learn, SciPy, imbalanced-learn
 - **Visualization**: Plotly, Seaborn, Matplotlib
 - **AI Assistant**: Groq API (llama-3.1-8b-instant model)
 - **Reporting**: Jinja2, ReportLab
 
 ## Recent Updates (Nov 2025)
+- **Data Balancer Feature (Nov 23, 2025)**: Added comprehensive data balancing section after Hypothesis Analysis with 14 balancing methods, feature/target column selection, before/after class distribution visualization, CSV/Excel download with warnings, and validation to block usage on uncleaned data. Advanced methods (GAN, VAE, Cost-Sensitive Learning) shown with "not yet implemented" status.
 - **Merged Data Upload with Home Page**: Data upload and configuration functionality integrated into the main home page (app.py) for streamlined user experience
 - **Added Excel Support**: Installed openpyxl for full Excel file (.xlsx, .xls) upload compatibility
 - **Enhanced Duplicate Removal**: New tab in Anomaly Detection page with clear UI showing duplicate rows are removed based on complete row matching (all columns or selected subset)
