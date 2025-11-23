@@ -35,8 +35,9 @@ def main():
     3. **Cleaning Wizard** - Apply cleaning methods with integrated weights
     4. **Visualization** - Create interactive visualizations
     5. **Hypothesis Analysis** - Perform statistical hypothesis tests
-    6. **AI Assistant** - Get expert advice and explanations
-    7. **Reports** - Generate comprehensive cleaning reports
+    6. **Data Balancer** - Balance datasets for machine learning
+    7. **AI Assistant** - Get expert advice and explanations
+    8. **Reports** - Generate comprehensive cleaning reports
     """)
     
     st.divider()
