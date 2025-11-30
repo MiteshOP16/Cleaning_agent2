@@ -38,8 +38,7 @@ class DataBalancer:
                 'ENN', 'CNN', 'OSS', 
                 'Cluster Centroids', 'NCR'
             ],
-            'Hybrid': ['SMOTE + Tomek Links', 'SMOTE + ENN'],
-            'Advanced': ['GAN Oversampling', 'VAE Oversampling', 'Cost-Sensitive Learning']
+            'Hybrid': ['SMOTE + Tomek Links', 'SMOTE + ENN']
         }
     
     def validate_data(self, df: pd.DataFrame, feature_cols: List[str], target_col: str) -> Dict[str, Any]:

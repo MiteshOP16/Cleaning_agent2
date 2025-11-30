@@ -218,11 +218,10 @@ st.subheader("Step 3: Choose Balancing Method")
 
 methods_dict = balancer.get_available_methods()
 
-tab_os, tab_us, tab_hybrid, tab_advanced = st.tabs([
+tab_os, tab_us, tab_hybrid = st.tabs([
     "Oversampling", 
     "Undersampling", 
-    "Hybrid", 
-    "Advanced"
+    "Hybrid"
 ])
 
 with tab_os:
@@ -266,21 +265,6 @@ with tab_hybrid:
     for method in methods_dict['Hybrid']:
         if st.button(f"Select {method}", key=f"btn_hybrid_{method}", use_container_width=True):
             st.session_state.selected_method = method
-
-with tab_advanced:
-    st.markdown("""
-    **Advanced Methods** use sophisticated techniques (coming soon).
-    
-    - **GAN Oversampling**: Uses Generative Adversarial Networks
-    - **VAE Oversampling**: Uses Variational Autoencoders
-    - **Cost-Sensitive Learning**: Adjusts learning algorithm to penalize misclassifications
-    """)
-    
-    st.info("Advanced methods are not yet implemented. These require additional deep learning dependencies.")
-    
-    for method in methods_dict['Advanced']:
-        if st.button(f"Select {method} (Not Available)", key=f"btn_adv_{method}", use_container_width=True, disabled=True):
-            pass
 
 if 'selected_method' in st.session_state:
     st.success(f"Selected method: **{st.session_state.selected_method}**")
