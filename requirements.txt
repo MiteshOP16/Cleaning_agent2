@@ -26,9 +26,9 @@ scipy==1.11.4
 seaborn>=0.13.2
 statsmodels==0.14.2
 streamlit>=1.49.1
-imbalanced-learn==0.12.3
+imbalanced-learn==0.14.0
 groq
-imbalanced-learn==0.12.3
+imbalanced-learn==0.14.0
 jinja2
 matplotlib
 numpy==1.26.4
