@@ -36,6 +36,7 @@ The core structure includes:
 - **Reporting**: Jinja2, ReportLab
 
 ## Recent Updates (Nov 2025)
+- **Data Balancer Fix and Enhancement (Nov 30, 2025)**: Fixed critical '_validate_data' error affecting all balancing methods by implementing proper NumPy array conversion pipeline with `_prepare_features` and `_prepare_target` methods. Added safe fit_resample wrapper that handles label encoding for categorical targets and properly reverses encoding after balancing. New split data flow added: users can now choose between "Use Whole Data" or "Use Split Data" with configurable stratified train/test split percentage. Test data is preserved unchanged and available for download at the bottom of the page. Proper validation blocks usage until data is cleaned.
 - **Data Balancer Feature (Nov 23, 2025)**: Added comprehensive data balancing section after Hypothesis Analysis with 14 balancing methods, feature/target column selection, before/after class distribution visualization, CSV/Excel download with warnings, and data quality validation (checks for missing values, numeric features, valid target classes). Works with both cleaned datasets from Cleaning Wizard or pre-cleaned uploaded datasets. Advanced methods (GAN, VAE, Cost-Sensitive Learning) shown with "not yet implemented" status.
 - **Merged Data Upload with Home Page**: Data upload and configuration functionality integrated into the main home page (app.py) for streamlined user experience
 - **Added Excel Support**: Installed openpyxl for full Excel file (.xlsx, .xls) upload compatibility
