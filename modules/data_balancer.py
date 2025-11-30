@@ -305,11 +305,25 @@ class DataBalancer:
     def _smote_tomek(self, X: np.ndarray, y: np.ndarray, random_state: int, label_encoder: Optional[LabelEncoder], was_encoded: bool) -> Tuple[np.ndarray, np.ndarray]:
         """SMOTE + Tomek Links (Hybrid)"""
         from imblearn.combine import SMOTETomek
-        sampler = SMOTETomek(random_state=random_state)
+        from imblearn.over_sampling import SMOTE
+        unique_classes, counts = np.unique(y, return_counts=True)
+        min_samples = counts.min()
+        k_neighbors = min(5, min_samples - 1)
+        if k_neighbors < 1:
+            k_neighbors = 1
+        smote = SMOTE(random_state=random_state, k_neighbors=k_neighbors)
+        sampler = SMOTETomek(random_state=random_state, smote=smote)
         return self._safe_fit_resample(sampler, X, y, label_encoder, was_encoded)
     
     def _smote_enn(self, X: np.ndarray, y: np.ndarray, random_state: int, label_encoder: Optional[LabelEncoder], was_encoded: bool) -> Tuple[np.ndarray, np.ndarray]:
         """SMOTE + ENN (Hybrid)"""
         from imblearn.combine import SMOTEENN
-        sampler = SMOTEENN(random_state=random_state)
+        from imblearn.over_sampling import SMOTE
+        unique_classes, counts = np.unique(y, return_counts=True)
+        min_samples = counts.min()
+        k_neighbors = min(5, min_samples - 1)
+        if k_neighbors < 1:
+            k_neighbors = 1
+        smote = SMOTE(random_state=random_state, k_neighbors=k_neighbors)
+        sampler = SMOTEENN(random_state=random_state, smote=smote)
         return self._safe_fit_resample(sampler, X, y, label_encoder, was_encoded)
